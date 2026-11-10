@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TurnosNailsWA.BD.Datos;
 using TurnosNailsWA.BD.Datos.Entity;
 using TurnosNailsWA.Shared.DTO;
