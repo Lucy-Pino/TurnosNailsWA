@@ -1,0 +1,23 @@
+﻿@page "/Turnos"
+@inject HttpClient http
+
+<h3>Lista de Turnos</h3>
+
+<p>@mensaje</p>
+
+@code {
+    private string mensaje = "";
+
+    protected override async Task OnInitializedAsync() // Se ejecuta cuando se inicializa el componente
+    {
+        try
+        {
+            mensaje = await http.GetStringAsync("api/turno"); // Llamada al endpoint GET de la API para obtener los turnos
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error:  {ex.Message}"; // Manejo de errores en caso de que la llamada falle
+        }
+
+    }
+}

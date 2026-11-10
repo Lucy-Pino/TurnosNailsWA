@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="TurnosNailsWA.BD/TurnosNailsWA.BD.csproj" Id="a6402625-4a0f-4bea-bc70-6e898eaea983" />
+  <Project Path="TurnosNailsWA.Cliente/TurnosNailsWA.Cliente.csproj" />
+  <Project Path="TurnosNailsWA.Repositorio/TurnosNailsWA.Repositorio.csproj" Id="490d4768-cfd2-4565-a9fd-05b647361381" />
+  <Project Path="TurnosNailsWA.Server/TurnosNailsWA.Server.csproj" />
+  <Project Path="TurnosNailsWA.Servicio/TurnosNailsWA.Servicio.csproj" Id="f276603b-898f-4264-8d48-147b15f4173c" />
+  <Project Path="TurnosNailsWA.Shared/TurnosNailsWA.Shared.csproj" Id="fcf0bdaf-4a73-4c6c-96a9-d54d7d5ec976" />
+</Solution>
