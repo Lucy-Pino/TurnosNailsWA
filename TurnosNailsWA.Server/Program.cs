@@ -16,7 +16,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(); //Maneja controllers 
 builder.Services.AddRazorPages();
 builder.Services.AddSwaggerGen(); //Genera documentación de la API
+builder.Services.AddScoped<IClienteRepositorio, ClienteRepositorio>();
+builder.Services.AddScoped<IServicioRepositorio, ServicioRepositorio>();
+builder.Services.AddScoped<IReservaRepositorio, ReservaRepositorio>();
 builder.Services.AddScoped<ITurnoRepositorio, TurnoRepositorio>();
+builder.Services.AddScoped<IPagoRepositorio, PagoRepositorio>();
+builder.Services.AddScoped<IHorarioAtencionRepositorio, HorarioAtencionRepositorio>();
 
 #endregion
 

@@ -59,48 +59,50 @@ namespace TurnosNailsWA.Server.Controllers
         //}
 
 
-        [HttpPost("reservar")]
-        public async Task<ActionResult<TurnoDTO>> ReservarTurno(TurnoDTO turnoDTO)
-        {
-            var cliente = await context.Clientes.FindAsync(turnoDTO.IdCliente);
+        // TEMPORAL: el endpoint pertenece al modelo anterior (turno directo con cliente y adelanto).
+        // Se rehace en la etapa de controladores con el flujo Reserva + Turno + Pago.
+        //[HttpPost("reservar")]
+        //public async Task<ActionResult<TurnoDTO>> ReservarTurno(TurnoDTO turnoDTO)
+        //{
+        //    var cliente = await context.Clientes.FindAsync(turnoDTO.IdCliente);
 
-            if (cliente == null)
-            {
-                return NotFound("El cliente no existe.");
-            }
+        //    if (cliente == null)
+        //    {
+        //        return NotFound("El cliente no existe.");
+        //    }
 
-            var servicio = await context.Servicios.FindAsync(turnoDTO.IdServicio);
+        //    var servicio = await context.Servicios.FindAsync(turnoDTO.IdServicio);
 
-            if (servicio == null)
-            {
-                return NotFound("El servicio no existe.");
-            }
+        //    if (servicio == null)
+        //    {
+        //        return NotFound("El servicio no existe.");
+        //    }
 
-            var turnoExistente = await context.Turnos
-                .FirstOrDefaultAsync(t =>
-                    t.Fecha == turnoDTO.Fecha &&
-                    t.Hora == turnoDTO.Hora);
+        //    var turnoExistente = await context.Turnos
+        //        .FirstOrDefaultAsync(t =>
+        //            t.Fecha == turnoDTO.Fecha &&
+        //            t.Hora == turnoDTO.Hora);
 
-            if (turnoExistente != null)
-            {
-                return BadRequest("El horario seleccionado no está disponible.");
-            }
+        //    if (turnoExistente != null)
+        //    {
+        //        return BadRequest("El horario seleccionado no está disponible.");
+        //    }
 
-            var turno = new Turno
-            {
-                IdCliente = turnoDTO.IdCliente,
-                IdServicio = turnoDTO.IdServicio,
-                Fecha = turnoDTO.Fecha,
-                Hora = turnoDTO.Hora,
-                Estado = "Pendiente de confirmación",
-                Adelanto = servicio.Precio * 0.30m
-            };
+        //    var turno = new Turno
+        //    {
+        //        IdCliente = turnoDTO.IdCliente,
+        //        IdServicio = turnoDTO.IdServicio,
+        //        Fecha = turnoDTO.Fecha,
+        //        Hora = turnoDTO.Hora,
+        //        Estado = "Pendiente de confirmación",
+        //        Adelanto = servicio.Precio * 0.30m
+        //    };
 
-            context.Turnos.Add(turno);
-            await context.SaveChangesAsync();
+        //    context.Turnos.Add(turno);
+        //    await context.SaveChangesAsync();
 
-            return Ok(turno);
-        }
+        //    return Ok(turno);
+        //}
 
         [HttpGet("fecha")]
         public async Task<ActionResult<List<TurnoDTO>>> ObtenerTurnosPorFecha(DateTime fecha)

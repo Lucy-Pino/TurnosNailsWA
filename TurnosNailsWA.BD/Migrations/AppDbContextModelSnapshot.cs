@@ -50,6 +50,31 @@ namespace TurnosNailsWA.BD.Migrations
                     b.ToTable("Clientes");
                 });
 
+            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.HorarioAtencion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("DiaSemana")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("HoraFin")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("HoraInicio")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HorariosAtencion");
+                });
+
             modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Pago", b =>
                 {
                     b.Property<int>("Id")
@@ -58,27 +83,73 @@ namespace TurnosNailsWA.BD.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("FechaPago")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("Comprobante")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
-                    b.Property<int>("IdTurno")
-                        .HasColumnType("int");
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("FechaComprobanteAdjuntado")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("MetodoPago")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Monto")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("TurnoId")
+                    b.Property<int>("ReservaId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TurnoId");
+                    b.HasIndex("ReservaId")
+                        .IsUnique();
 
                     b.ToTable("Pagos");
+                });
+
+            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Reserva", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CodigoReserva")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ImporteTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("CodigoReserva")
+                        .IsUnique();
+
+                    b.ToTable("Reservas");
                 });
 
             modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Servicio", b =>
@@ -89,13 +160,23 @@ namespace TurnosNailsWA.BD.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Duracion")
+                    b.Property<string>("Categoria")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Duracion")
+                        .HasColumnType("int");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("Precio")
                         .HasColumnType("decimal(18,2)");
@@ -113,27 +194,18 @@ namespace TurnosNailsWA.BD.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Adelanto")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("ClienteId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Hora")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<TimeSpan>("Hora")
+                        .HasColumnType("time");
 
-                    b.Property<int>("IdCliente")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdServicio")
+                    b.Property<int>("ReservaId")
                         .HasColumnType("int");
 
                     b.Property<int>("ServicioId")
@@ -141,7 +213,7 @@ namespace TurnosNailsWA.BD.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClienteId");
+                    b.HasIndex("ReservaId");
 
                     b.HasIndex("ServicioId");
 
@@ -150,16 +222,16 @@ namespace TurnosNailsWA.BD.Migrations
 
             modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Pago", b =>
                 {
-                    b.HasOne("TurnosNailsWA.BD.Datos.Entity.Turno", "Turno")
-                        .WithMany()
-                        .HasForeignKey("TurnoId")
+                    b.HasOne("TurnosNailsWA.BD.Datos.Entity.Reserva", "Reserva")
+                        .WithOne("Pago")
+                        .HasForeignKey("TurnosNailsWA.BD.Datos.Entity.Pago", "ReservaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Turno");
+                    b.Navigation("Reserva");
                 });
 
-            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Turno", b =>
+            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Reserva", b =>
                 {
                     b.HasOne("TurnosNailsWA.BD.Datos.Entity.Cliente", "Cliente")
                         .WithMany()
@@ -167,20 +239,32 @@ namespace TurnosNailsWA.BD.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Cliente");
+                });
+
+            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Turno", b =>
+                {
+                    b.HasOne("TurnosNailsWA.BD.Datos.Entity.Reserva", "Reserva")
+                        .WithMany()
+                        .HasForeignKey("ReservaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("TurnosNailsWA.BD.Datos.Entity.Servicio", "Servicio")
-                        .WithMany("Turnos")
+                        .WithMany()
                         .HasForeignKey("ServicioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Cliente");
+                    b.Navigation("Reserva");
 
                     b.Navigation("Servicio");
                 });
 
-            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Servicio", b =>
+            modelBuilder.Entity("TurnosNailsWA.BD.Datos.Entity.Reserva", b =>
                 {
-                    b.Navigation("Turnos");
+                    b.Navigation("Pago")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
