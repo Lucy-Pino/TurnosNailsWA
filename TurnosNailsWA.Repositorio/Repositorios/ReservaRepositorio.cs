@@ -35,6 +35,38 @@ namespace TurnosNailsWA.Repositorio.Repositorios
             return lista;
         }
 
+        public async Task<Reserva> InsertReservaCompleta(Reserva reserva, List<Turno> turnos)
+        {
+            if (turnos == null || turnos.Count == 0)
+            {
+                throw new ArgumentException("La reserva debe tener al menos un turno.");
+            }
+
+            await using var transaccion = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                context.Reservas.Add(reserva);
+                await context.SaveChangesAsync();
+
+                foreach (var turno in turnos)
+                {
+                    turno.ReservaId = reserva.Id;
+                }
+
+                context.Turnos.AddRange(turnos);
+                await context.SaveChangesAsync();
+
+                await transaccion.CommitAsync();
+                return reserva;
+            }
+            catch
+            {
+                await transaccion.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<Reserva?> SelectByCodigo(string codigo)
         {
             return await context.Reservas.FirstOrDefaultAsync(r => r.CodigoReserva == codigo);

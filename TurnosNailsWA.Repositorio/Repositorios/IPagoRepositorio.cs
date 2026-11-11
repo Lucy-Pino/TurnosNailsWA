@@ -10,6 +10,7 @@ namespace TurnosNailsWA.Repositorio.Repositorios
     {
         Task<List<PagoListadoDTO>> ListaPago();
         Task<List<PagoListadoDTO>> ListaPendientesVerificacion();
+        Task<int> ActualizarVencidos(int minutos);
         Task<Pago?> SelectByReserva(int reservaId);
     }
 }

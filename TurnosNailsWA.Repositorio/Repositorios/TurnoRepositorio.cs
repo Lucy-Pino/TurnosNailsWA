@@ -62,6 +62,7 @@ namespace TurnosNailsWA.Repositorio.Repositorios
         {
             return await
             context.Turnos
+                        .Include(t => t.Servicio)
                         .Where(t => t.Fecha.Date == fecha.Date && t.Estado != "Cancelado")
                         .ToListAsync();
         }

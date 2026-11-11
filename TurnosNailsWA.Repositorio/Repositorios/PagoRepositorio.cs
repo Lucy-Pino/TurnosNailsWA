@@ -58,6 +58,35 @@ namespace TurnosNailsWA.Repositorio.Repositorios
             return lista;
         }
 
+        public async Task<int> ActualizarVencidos(int minutos)
+        {
+            if (minutos <= 0)
+            {
+                throw new ArgumentException("Los minutos deben ser mayores que cero.");
+            }
+
+            var limite = DateTime.Now.AddMinutes(-minutos);
+
+            var vencidos = await
+            context.Pagos
+                        .Where(p => p.Estado == "Pendiente de verificación"
+                                 && p.FechaComprobanteAdjuntado <= limite)
+                        .ToListAsync();
+
+            if (vencidos.Count == 0)
+            {
+                return 0;
+            }
+
+            foreach (var pago in vencidos)
+            {
+                pago.Estado = "Pendiente de aclaración";
+            }
+
+            await context.SaveChangesAsync();
+            return vencidos.Count;
+        }
+
         public async Task<Pago?> SelectByReserva(int reservaId)
         {
             return await context.Pagos.FirstOrDefaultAsync(p => p.ReservaId == reservaId);
