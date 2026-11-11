@@ -20,7 +20,7 @@ namespace TurnosNailsWA.Server.Controllers
         }
 
         [HttpGet] // api/servicio
-        public async Task<ActionResult<List<Servicio>>> Get()
+        public async Task<ActionResult<List<TurnosNailsWA.BD.Datos.Entity.Servicio>>> Get()
         {
             var lista = await context.Servicios.ToListAsync();
             if (lista == null)
