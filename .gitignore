@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Comprobantes subidos por las clientas (archivos privados, no se versionan)
+TurnosNailsWA.Server/Comprobantes/
+
 # User-specific files
 *.rsuser
 *.suo

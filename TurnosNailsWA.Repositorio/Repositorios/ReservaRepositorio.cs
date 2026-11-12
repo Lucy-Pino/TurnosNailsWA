@@ -35,11 +35,16 @@ namespace TurnosNailsWA.Repositorio.Repositorios
             return lista;
         }
 
-        public async Task<Reserva> InsertReservaCompleta(Reserva reserva, List<Turno> turnos)
+        public async Task<Reserva> InsertReservaCompleta(Reserva reserva, List<Turno> turnos, Pago pago)
         {
             if (turnos == null || turnos.Count == 0)
             {
                 throw new ArgumentException("La reserva debe tener al menos un turno.");
+            }
+
+            if (pago == null)
+            {
+                throw new ArgumentException("La reserva debe tener un pago registrado.");
             }
 
             await using var transaccion = await context.Database.BeginTransactionAsync();
@@ -48,6 +53,9 @@ namespace TurnosNailsWA.Repositorio.Repositorios
             {
                 context.Reservas.Add(reserva);
                 await context.SaveChangesAsync();
+
+                pago.ReservaId = reserva.Id;
+                context.Pagos.Add(pago);
 
                 foreach (var turno in turnos)
                 {

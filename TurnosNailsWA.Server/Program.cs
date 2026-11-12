@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TurnosNailsWA.BD.Datos;
 using TurnosNailsWA.Repositorio;
 using TurnosNailsWA.Repositorio.Repositorios;
+using TurnosNailsWA.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ builder.Services.AddScoped<IReservaRepositorio, ReservaRepositorio>();
 builder.Services.AddScoped<ITurnoRepositorio, TurnoRepositorio>();
 builder.Services.AddScoped<IPagoRepositorio, PagoRepositorio>();
 builder.Services.AddScoped<IHorarioAtencionRepositorio, HorarioAtencionRepositorio>();
+builder.Services.AddHostedService<PagoVencidoService>(); //Revisa los pagos vencidos cada minuto
 
 #endregion
 

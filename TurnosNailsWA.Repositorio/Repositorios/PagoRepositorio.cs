@@ -41,7 +41,30 @@ namespace TurnosNailsWA.Repositorio.Repositorios
         {
             var lista = await
             context.Pagos
-                        .Where(p => p.Estado == "Pendiente de verificación")
+                        .Where(p => p.Estado == "Pendiente de verificación"
+                                 && p.Reserva.Estado == "Pendiente de verificación")
+                        .OrderBy(p => p.FechaComprobanteAdjuntado)
+                        .Select(p => new PagoListadoDTO
+                        {
+                            Id = p.Id,
+                            Monto = p.Monto,
+                            MetodoPago = p.MetodoPago,
+                            Comprobante = p.Comprobante,
+                            Estado = p.Estado,
+                            FechaComprobanteAdjuntado = p.FechaComprobanteAdjuntado,
+                            CodigoReserva = p.Reserva.CodigoReserva,
+                            ClienteNombre = p.Reserva.Cliente.Nombre + " " + p.Reserva.Cliente.Apellido
+                        })
+                        .ToListAsync();
+            return lista;
+        }
+
+        public async Task<List<PagoListadoDTO>> ListaPendientesAclaracion()
+        {
+            var lista = await
+            context.Pagos
+                        .Where(p => p.Estado == "Pendiente de aclaración"
+                                 && p.Reserva.Estado == "Pendiente de verificación")
                         .OrderBy(p => p.FechaComprobanteAdjuntado)
                         .Select(p => new PagoListadoDTO
                         {
@@ -70,6 +93,7 @@ namespace TurnosNailsWA.Repositorio.Repositorios
             var vencidos = await
             context.Pagos
                         .Where(p => p.Estado == "Pendiente de verificación"
+                                 && p.Reserva.Estado == "Pendiente de verificación"
                                  && p.FechaComprobanteAdjuntado <= limite)
                         .ToListAsync();
 

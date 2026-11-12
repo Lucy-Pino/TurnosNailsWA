@@ -9,7 +9,7 @@ namespace TurnosNailsWA.Repositorio.Repositorios
     public interface IReservaRepositorio : IRepositorio<Reserva> //hereda de IRepositorio con la entidad Reserva
     {
         Task<List<ReservaListadoDTO>> ListaReserva();
-        Task<Reserva> InsertReservaCompleta(Reserva reserva, List<Turno> turnos);
+        Task<Reserva> InsertReservaCompleta(Reserva reserva, List<Turno> turnos, Pago pago);
         Task<Reserva?> SelectByCodigo(string codigo);
     }
 }
