@@ -163,6 +163,11 @@ namespace TurnosNailsWA.Server.Controllers
             {
                 await reservaRepositorio.InsertReservaCompleta(reserva, turnos, pago);
             }
+            catch (InvalidOperationException ex)
+            {
+                EliminarComprobante(nombreArchivo);
+                return BadRequest(ex.Message);
+            }
             catch
             {
                 EliminarComprobante(nombreArchivo);

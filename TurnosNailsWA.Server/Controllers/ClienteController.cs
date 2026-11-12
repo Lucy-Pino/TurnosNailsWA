@@ -85,6 +85,37 @@ namespace TurnosNailsWA.Server.Controllers
             return Ok(entidad.Id);
         }
 
+        [HttpPut("{id:int}")] // api/cliente/5
+        public async Task<ActionResult<bool>> Put(int id, ClienteDTO DTO)
+        {
+            if (id != DTO.Id)
+            {
+                return BadRequest("Datos incorrectos, no se actualizó.");
+            }
+
+            var telefono = NormalizarTelefono(DTO.Telefono);
+            if (string.IsNullOrWhiteSpace(telefono))
+            {
+                return BadRequest("El teléfono es obligatorio.");
+            }
+
+            var existente = await repositorio.SelectByTelefono(telefono);
+            if (existente is not null && existente.Id != id)
+            {
+                return BadRequest("Ya existe una clienta con ese teléfono.");
+            }
+
+            ClienteEntity entidad = new ClienteEntity();
+            entidad.Id = DTO.Id;
+            entidad.Nombre = DTO.Nombre;
+            entidad.Apellido = DTO.Apellido;
+            entidad.Telefono = telefono;
+
+            var resultado = await repositorio.Update(entidad);
+
+            return Ok(resultado);
+        }
+
         private static string NormalizarTelefono(string telefono)
         {
             if (string.IsNullOrWhiteSpace(telefono))
