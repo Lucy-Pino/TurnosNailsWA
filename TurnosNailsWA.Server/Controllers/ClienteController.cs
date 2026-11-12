@@ -68,6 +68,10 @@ namespace TurnosNailsWA.Server.Controllers
         public async Task<ActionResult<int>> Post(ClienteDTO DTO)
         {
             var telefono = NormalizarTelefono(DTO.Telefono);
+            if (string.IsNullOrWhiteSpace(telefono))
+            {
+                return BadRequest("El teléfono es obligatorio.");
+            }
             var existente = await repositorio.SelectByTelefono(telefono);
             if (existente is not null)
             {

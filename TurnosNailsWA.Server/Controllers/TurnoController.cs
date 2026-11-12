@@ -12,16 +12,19 @@ namespace TurnosNailsWA.Server.Controllers
         private readonly IServicioRepositorio servicioRepositorio;
         private readonly IHorarioAtencionRepositorio horarioRepositorio;
         private readonly IReservaRepositorio reservaRepositorio;
+        private readonly IPagoRepositorio pagoRepositorio;
 
         public TurnoController(ITurnoRepositorio turnoRepositorio,
                                IServicioRepositorio servicioRepositorio,
                                IHorarioAtencionRepositorio horarioRepositorio,
-                               IReservaRepositorio reservaRepositorio)
+                               IReservaRepositorio reservaRepositorio,
+                               IPagoRepositorio pagoRepositorio)
         {
             this.turnoRepositorio = turnoRepositorio;
             this.servicioRepositorio = servicioRepositorio;
             this.horarioRepositorio = horarioRepositorio;
             this.reservaRepositorio = reservaRepositorio;
+            this.pagoRepositorio = pagoRepositorio;
         }
 
         [HttpGet] // api/turno
@@ -168,6 +171,14 @@ namespace TurnosNailsWA.Server.Controllers
                 {
                     reserva.Estado = "Cancelada";
                     await reservaRepositorio.Update(reserva);
+                }
+
+                // Mismo criterio que ReservaController.Cancelar: la reserva cancelada deja el pago en "Cancelado".
+                var pago = await pagoRepositorio.SelectByReserva(turno.ReservaId);
+                if (pago is not null && pago.Estado != "Cancelado")
+                {
+                    pago.Estado = "Cancelado";
+                    await pagoRepositorio.Update(pago);
                 }
             }
 
