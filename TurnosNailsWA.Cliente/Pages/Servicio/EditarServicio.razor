@@ -1,0 +1,131 @@
+@page "/servicios/editar/{id:int}"
+@using TurnosNailsWA.Servicio.ServicioHTTP
+@using TurnosNailsWA.Shared.DTO
+
+@inject IHttpService http
+@inject NavigationManager navHttp
+
+<h3>EDITAR SERVICIO</h3>
+
+@if (!cargado)
+{
+    <p>Buscando ....</p>
+}
+else
+{
+    <EditForm Model="servicio" OnValidSubmit="Grabar" FormName="EditarServicioForm">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label>
+                Nombre del Servicio:
+            </label>
+            <div>
+                <InputText class="form-control" @bind-Value="servicio.Nombre" />
+                <ValidationMessage For="@(() => servicio.Nombre)" />
+            </div>
+        </div>
+        <br />
+        <div class="form-group">
+            <label>
+                Categoría:
+            </label>
+            <div>
+                <InputText class="form-control" @bind-Value="servicio.Categoria" />
+                <ValidationMessage For="@(() => servicio.Categoria)" />
+            </div>
+        </div>
+        <br />
+        <div class="form-group">
+            <label>
+                Descripción:
+            </label>
+            <div>
+                <InputTextArea class="form-control" @bind-Value="servicio.Descripcion" />
+                <ValidationMessage For="@(() => servicio.Descripcion)" />
+            </div>
+        </div>
+        <br />
+        <div class="form-group">
+            <label>
+                Duración (minutos):
+            </label>
+            <div>
+                <InputNumber class="form-control" @bind-Value="servicio.Duracion" />
+                <ValidationMessage For="@(() => servicio.Duracion)" />
+            </div>
+        </div>
+        <br />
+        <div class="form-group">
+            <label>
+                Precio:
+            </label>
+            <div>
+                <InputNumber class="form-control" step="0.01" @bind-Value="servicio.Precio" />
+                <ValidationMessage For="@(() => servicio.Precio)" />
+            </div>
+        </div>
+        <br />
+        <button class="btn btn-primary" type="submit">Grabar</button>
+        <button class="btn btn-secondary" type="button" @onclick="Cancelar">Cancelar</button>
+    </EditForm>
+}
+<br />
+<p>@Mensaje</p>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ServicioDTO servicio = new ServicioDTO();
+    private bool cargado = false;
+    string Mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LeerServicio();
+    }
+
+    private async Task LeerServicio()
+    {
+        try
+        {
+            var resp = await http.GetAsync<ServicioDTO>($"api/servicio/{Id}");
+
+            if (resp.Error)
+            {
+                Mensaje = resp.Mensaje ?? "";
+            }
+            else
+            {
+                servicio = resp.Respuesta ?? new ServicioDTO();
+                cargado = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Mensaje = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task Grabar()
+    {
+        var httpRespuesta = await http.PutAsync<ServicioDTO, bool>($"api/servicio/{Id}", servicio);
+        if (httpRespuesta.Error)
+        {
+            Mensaje = httpRespuesta.Mensaje ?? "";
+        }
+        else if (httpRespuesta.Respuesta == true)
+        {
+            navHttp.NavigateTo("/servicios?guardado=true");
+        }
+        else
+        {
+            // El endpoint devuelve Ok(false) cuando no encuentra el registro a actualizar.
+            Mensaje = $"No existe el servicio con id: {Id}.";
+        }
+    }
+
+    private void Cancelar()
+    {
+        navHttp.NavigateTo("/servicios");
+    }
+}

@@ -1,0 +1,93 @@
+@page "/servicios"
+@using TurnosNailsWA.Shared.DTO
+@using TurnosNailsWA.Servicio.ServicioHTTP
+@inject IHttpService http
+
+<h3>Lista de Servicios</h3>
+
+<br />
+<a class="btn btn-primary" href="/servicios/crear">Crear Servicio</a>
+<br />
+@if (guardado == true)
+{
+    <p class="text-success">El servicio se guardó correctamente.</p>
+}
+<table class="table">
+    <tr>
+        <th>Categoría</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Duración</th>
+        <th>Precio</th>
+        <th></th>
+    </tr>
+    @if (servicios == null)
+    {
+        <p>Buscando ....</p>
+    }
+    else if (servicios.Count == 0)
+    {
+        <p>No existen servicios cargados en esta lista</p>
+    }
+    else
+    {
+        @foreach (var servicio in servicios)
+        {
+            <tr>
+                <td>@servicio.Categoria</td>
+                <td>@servicio.Nombre</td>
+                <td>@servicio.Descripcion</td>
+                <td>@servicio.Duracion min</td>
+                <td>@servicio.Precio.ToString("0.00")</td>
+                <td>
+                    <a class="btn btn-primary" href="/servicios/editar/@servicio.Id">Actualizar</a>
+                </td>
+            </tr>
+        }
+    }
+</table>
+<br />
+<p>@mensaje</p>
+<br />
+
+@code {
+    List<ServicioListadoDTO>? servicios;
+    private string mensaje = "";
+
+    [SupplyParameterFromQuery(Name = "guardado")]
+    public bool? guardado { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LeerServicios();
+    }
+
+    private async Task LeerServicios()
+    {
+        try
+        {
+            var resp = await http.GetAsync<List<ServicioListadoDTO>>("api/servicio");
+
+            if (resp.Error)
+            {
+                // El endpoint devuelve 404 cuando la lista está vacía: se toma como lista sin registros.
+                if (resp.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    servicios = new List<ServicioListadoDTO>();
+                }
+                else
+                {
+                    mensaje = resp.Mensaje ?? "";
+                }
+            }
+            else
+            {
+                servicios = resp.Respuesta ?? new List<ServicioListadoDTO>();
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error: {ex.Message}";
+        }
+    }
+}
