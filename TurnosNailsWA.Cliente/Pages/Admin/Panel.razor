@@ -1,0 +1,107 @@
+@page "/admin"
+@attribute [Authorize]
+
+<PageTitle>Panel Administrativo • Eli Beauty Care</PageTitle>
+
+<div class="container py-4">
+    <!-- Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill text-uppercase small" style="background-color: var(--color-secondary-container); color: var(--color-primary); font-size: 0.72rem;">Consola Operativa</span>
+                <span class="text-muted small">•</span>
+                <span class="text-muted small">Atelier de Eli Gómez</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Panel de Gestión del Atelier</h1>
+            <p class="text-muted small mb-0">Administración integral del caso de uso Reserva de Turno en cabina única.</p>
+        </div>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-white border shadow-sm">
+            <span class="rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
+            <span class="small fw-semibold text-dark">Cabina Única: Activa</span>
+        </div>
+    </div>
+
+    <!-- 3 Core Management Cards -->
+    <div class="row g-4 mb-4">
+        <!-- 1. Gestión de Reservas -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card card-stitch h-100 p-4 d-flex flex-column justify-content-between position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 bottom-0" style="width: 4px; background-color: var(--color-primary);"></div>
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center p-2.5 text-white" style="background-color: var(--color-primary);">
+                            <span class="material-symbols-outlined fs-4">book_online</span>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0 fs-6">Gestión de Reservas</h5>
+                            <small class="text-muted">Verificación y estados</small>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-4" style="line-height: 1.5;">
+                        Consultar reservas recibidas, validar comprobantes de transferencia, confirmar reservas, cancelar turnos y liquidar importes.
+                    </p>
+                </div>
+                <div>
+                    <a href="reservas" class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm">
+                        <span>Ir a Reservas</span>
+                        <span class="material-symbols-outlined fs-6">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Agenda de Turnos -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card card-stitch h-100 p-4 d-flex flex-column justify-content-between position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 bottom-0" style="width: 4px; background-color: var(--color-primary-container);"></div>
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center p-2.5" style="background-color: var(--color-secondary-container); color: var(--color-primary);">
+                            <span class="material-symbols-outlined fs-4">calendar_today</span>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0 fs-6">Agenda de Turnos</h5>
+                            <small class="text-muted">Cronograma unificado</small>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-4" style="line-height: 1.5;">
+                        Visualizar la agenda de turnos asignados por día, semana o mes en intervalos de 15 minutos sin superposición de manicura ni pedicura.
+                    </p>
+                </div>
+                <div>
+                    <a href="turnos" class="btn btn-stitch-secondary w-100 d-inline-flex align-items-center justify-content-center gap-2">
+                        <span>Ver Agenda</span>
+                        <span class="material-symbols-outlined fs-6">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Catálogo de Servicios -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card card-stitch h-100 p-4 d-flex flex-column justify-content-between position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 bottom-0" style="width: 4px; background-color: var(--color-outline);"></div>
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center p-2.5 bg-light text-primary">
+                            <span class="material-symbols-outlined fs-4">spa</span>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0 fs-6">Catálogo de Servicios</h5>
+                            <small class="text-muted">Tratamientos y precios</small>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-4" style="line-height: 1.5;">
+                        Consultar los servicios disponibles de manicura y pedicura, sus duraciones de sesión y precios vigentes.
+                    </p>
+                </div>
+                <div>
+                    <a href="servicios" class="btn btn-stitch-secondary w-100 d-inline-flex align-items-center justify-content-center gap-2">
+                        <span>Ver Servicios</span>
+                        <span class="material-symbols-outlined fs-6">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

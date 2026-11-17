@@ -14,5 +14,6 @@ namespace TurnosNailsWA.Shared.DTO
         public ClienteDTO Cliente { get; set; } = new ClienteDTO();
         public PagoDTO? Pago { get; set; }
         public List<TurnoListadoDTO> Turnos { get; set; } = new List<TurnoListadoDTO>();
+        public ReservaLiquidacionDTO? Liquidacion { get; set; }
     }
 }

@@ -1,0 +1,135 @@
+@page "/admin/login"
+@using TurnosNailsWA.Shared.DTO
+@using TurnosNailsWA.Cliente.Servicios
+@inject HttpClient http
+@inject NavigationManager navHttp
+@inject CustomAuthStateProvider authStateProvider
+
+<PageTitle>Acceso Administrativo • Eli Beauty Care</PageTitle>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-7 col-lg-5">
+            <div class="card card-stitch p-4 p-md-5 shadow-sm border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #ffffff 0%, #fcf9f5 100%);">
+                <div class="position-absolute top-0 start-0 end-0" style="height: 4px; background: linear-gradient(90deg, var(--color-primary), var(--color-primary-container));"></div>
+
+                <!-- Logo & Brand Header -->
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm" style="width: 56px; height: 56px; background-color: var(--color-secondary-container); color: var(--color-primary);">
+                        <span class="material-symbols-outlined fs-2">spa</span>
+                    </div>
+                    <h2 class="h3 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">
+                        Consola Administrativa
+                    </h2>
+                    <p class="text-muted small mb-0">Eli Beauty Care • Gestión de Agenda y Reservas</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(mensajeError))
+                {
+                    <div class="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3" role="alert">
+                        <span class="material-symbols-outlined fs-5">error</span>
+                        <div>@mensajeError</div>
+                    </div>
+                }
+
+                <EditForm Model="modelo" OnValidSubmit="IniciarSesion">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Correo Electrónico</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">
+                                <span class="material-symbols-outlined fs-6">mail</span>
+                            </span>
+                            <InputText class="form-control" @bind-Value:event="oninput" @bind-Value="modelo.Usuario" placeholder="admin@elibeautycare.com" />
+                        </div>
+                        <ValidationMessage For="@(() => modelo.Usuario)" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold text-dark">Contraseña de Acceso</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">
+                                <span class="material-symbols-outlined fs-6">lock</span>
+                            </span>
+                            <input type="@(mostrarPassword ? "text" : "password")"
+                                   class="form-control"
+                                   @bind="modelo.Password"
+                                   placeholder="••••••••" />
+                            <button class="btn btn-outline-secondary" type="button" @onclick="AlternarVisibilidad">
+                                <span class="material-symbols-outlined fs-6">@(mostrarPassword ? "visibility_off" : "visibility")</span>
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => modelo.Password)" class="text-danger small mt-1" />
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm d-flex align-items-center justify-content-center gap-2" disabled="@cargando">
+                            @if (cargando)
+                            {
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                <span>Verificando credenciales...</span>
+                            }
+                            else
+                            {
+                                <span class="material-symbols-outlined fs-5">login</span>
+                                <span>Ingresar a la Consola</span>
+                            }
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/" class="small text-muted d-inline-flex align-items-center gap-1">
+                            <span class="material-symbols-outlined fs-6">arrow_back</span>
+                            <span>Volver al sitio público</span>
+                        </a>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginDTO modelo = new LoginDTO
+    {
+        Usuario = "admin@elibeautycare.com"
+    };
+    private bool mostrarPassword = false;
+    private bool cargando = false;
+    private string mensajeError = "";
+
+    private void AlternarVisibilidad()
+    {
+        mostrarPassword = !mostrarPassword;
+    }
+
+    private async Task IniciarSesion()
+    {
+        cargando = true;
+        mensajeError = "";
+
+        try
+        {
+            var respuesta = await http.PostAsJsonAsync("api/auth/login", modelo);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                authStateProvider.NotificarEstado();
+                navHttp.NavigateTo("/admin");
+            }
+            else
+            {
+                mensajeError = "Credenciales incorrectas. Verifique usuario y contraseña.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Error al intentar conectar con el servidor: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

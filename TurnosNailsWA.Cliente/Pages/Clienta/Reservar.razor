@@ -1,0 +1,1371 @@
+@page "/reservar"
+@using TurnosNailsWA.Shared.DTO
+@using TurnosNailsWA.Servicio.ServicioHTTP
+@inject IHttpService http
+@inject HttpClient httpClient
+@inject NavigationManager navHttp
+@inject IJSRuntime js
+
+<PageTitle>Reservar Turno • Eli Beauty Care</PageTitle>
+
+<div class="container py-4">
+    @if (reservaRegistrada != null)
+    {
+        <!-- PANTALLA DE CONFIRMACIÓN DE RESERVA EXITOSA (STITCH SCREEN 6) -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Header Status -->
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px; background-color: var(--color-secondary-container); color: var(--color-primary);">
+                    <span class="material-symbols-outlined fs-2">hourglass_top</span>
+                </div>
+                <h1 class="h2 fw-bold text-primary mb-2" style="font-family: 'Playfair Display', serif;">
+                    ¡Solicitud de reserva recibida!
+                </h1>
+                <p class="text-muted mx-auto mb-3" style="max-width: 580px;">
+                    Recibimos tu solicitud y el comprobante de transferencia adjunto. La reserva se encuentra <strong class="text-dark">en revisión</strong> hasta que verifiquemos el pago.
+                </p>
+                <!-- Badges de los 3 estados claramente visibles -->
+                <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+                    <span class="badge badge-stitch-warning px-3 py-1.5 rounded-pill fs-6">
+                        Reserva: @reservaRegistrada.Estado
+                    </span>
+                    <span class="badge badge-stitch-warning px-3 py-1.5 rounded-pill fs-6">
+                        Pago: @(reservaRegistrada.Pago?.Estado ?? "Pendiente de verificación")
+                    </span>
+                    <span class="badge badge-stitch-warning px-3 py-1.5 rounded-pill fs-6">
+                        Turnos: Turno a confirmar
+                    </span>
+                </div>
+            </div>
+
+            <!-- Código Único de Reserva (High Emphasis Card) -->
+            <div class="card card-stitch border-0 shadow-sm p-4 mb-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, #ffffff 0%, #fcf9f5 100%);">
+                <div class="position-absolute top-0 start-0 end-0" style="height: 4px; background: linear-gradient(90deg, var(--color-primary), var(--color-primary-container));"></div>
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-md-8">
+                        <span class="text-uppercase fw-semibold text-muted small d-flex align-items-center gap-1" style="letter-spacing: 0.08em; font-size: 0.75rem;">
+                            <span class="material-symbols-outlined text-primary fs-6">tag</span> CÓDIGO ÚNICO DE RESERVA
+                        </span>
+                        <div class="display-6 fw-bold text-primary font-monospace my-1">
+                            @reservaRegistrada.CodigoReserva
+                        </div>
+                        <p class="small text-muted mb-0">
+                            <strong>Guardá tu código de reserva.</strong> Lo vas a necesitar para consultar tus turnos y el estado de tu reserva posteriormente.
+                        </p>
+                    </div>
+                    <div class="col-12 col-md-4 text-md-end">
+                        <button type="button" class="btn btn-outline-primary d-inline-flex align-items-center gap-2" @onclick="CopiarCodigo">
+                            <span class="material-symbols-outlined fs-6">content_copy</span>
+                            <span>@(codigoCopiado ? "¡Código copiado!" : "Copiar código")</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two-column Summary: Client & Balance -->
+            <div class="row g-4 mb-4">
+                <!-- Client Details -->
+                <div class="col-12 col-md-6">
+                    <div class="card card-stitch h-100 p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-primary fw-bold" style="width: 48px; height: 48px;">
+                                <span class="material-symbols-outlined fs-4">person</span>
+                            </div>
+                            <div>
+                                <small class="text-uppercase text-muted fw-semibold" style="letter-spacing: 0.05em; font-size: 0.72rem;">Titular de la reserva</small>
+                                <h5 class="mb-0 fw-bold">@reservaRegistrada.Cliente.Nombre @reservaRegistrada.Cliente.Apellido</h5>
+                                <small class="text-muted d-flex align-items-center gap-1 mt-1">
+                                    <span class="material-symbols-outlined fs-6">smartphone</span> @reservaRegistrada.Cliente.Telefono
+                                </small>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top small text-muted">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Fecha de solicitud:</span>
+                                <span class="fw-semibold text-dark">@reservaRegistrada.FechaCreacion.ToString("dd/MM/yyyy HH:mm") hs</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Estado de la reserva:</span>
+                                <span class="badge badge-stitch-warning">@reservaRegistrada.Estado</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Estado del pago:</span>
+                                <span class="badge badge-stitch-warning">@(reservaRegistrada.Pago?.Estado ?? "Pendiente de verificación")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Financiero -->
+                <div class="col-12 col-md-6">
+                    <div class="card card-stitch h-100 p-4">
+                        <h6 class="fw-bold text-primary mb-3 d-flex align-items-center gap-2">
+                            <span class="material-symbols-outlined fs-5">payments</span>
+                            Resumen Económico
+                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Total de la reserva:</span>
+                            <span class="fw-bold fs-6 text-dark">$ @reservaRegistrada.ImporteTotal.ToString("N2")</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Seña del 30%:</span>
+                            <span class="fw-semibold text-dark">$ @((reservaRegistrada.ImporteTotal * 0.30m).ToString("N2"))</span>
+                        </div>
+                        <div class="p-2 rounded-3 mb-1 d-flex justify-content-between align-items-center" style="background-color: var(--color-surface-container-low);">
+                            <span class="small fw-semibold text-primary d-flex align-items-center gap-1">
+                                <span class="material-symbols-outlined fs-6">check_circle</span> Importe transferido:
+                            </span>
+                            <span class="fw-bold text-primary">$ @((reservaRegistrada.Pago?.Monto ?? (reservaRegistrada.ImporteTotal * 0.30m)).ToString("N2"))</span>
+                        </div>
+                        <div class="p-2 rounded-3 mb-2 d-flex justify-content-between align-items-center" style="background-color: var(--color-surface-container);">
+                            <span class="small text-muted">Restante a pagar en el salón (70%):</span>
+                            <span class="fw-bold text-success">$ @((reservaRegistrada.ImporteTotal - (reservaRegistrada.Pago?.Monto ?? (reservaRegistrada.ImporteTotal * 0.30m))).ToString("N2"))</span>
+                        </div>
+
+                        @if (reservaRegistrada.Pago != null && !string.IsNullOrEmpty(reservaRegistrada.Pago.Comprobante))
+                        {
+                            <div class="pt-2 border-top">
+                                <a href="api/pago/@reservaRegistrada.Pago.Id/comprobante" target="_blank" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                                    <span class="material-symbols-outlined fs-6">receipt_long</span>
+                                    <span>Ver comprobante adjuntado</span>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aviso Importante de Verificación -->
+            <div class="alert alert-warning py-2.5 px-3 small mb-4 d-flex align-items-center gap-2">
+                <span class="material-symbols-outlined text-warning fs-5">info</span>
+                <div>
+                    <strong>Importante:</strong> Tu comprobante de transferencia bancaria fue recibido y está en proceso de verificación por la administradora. Cuando sea verificado, tu reserva y turnos quedarán confirmados.
+                </div>
+            </div>
+
+            <!-- Tabla de turnos solicitados -->
+            <div class="card card-stitch p-4 mb-4">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary fs-5">calendar_month</span>
+                    Detalle de servicios y turnos solicitados
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-stitch mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 90px;">Categoría</th>
+                                <th>Servicio</th>
+                                <th class="text-center">Duración</th>
+                                <th>Fecha</th>
+                                <th>Horario</th>
+                                <th class="text-end">Precio</th>
+                                <th class="text-center">Estado del turno</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var turno in reservaRegistrada.Turnos)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        <span class="badge rounded-pill text-uppercase px-2 py-1" style="font-size: 0.7rem; background-color: @(turno.Categoria.Equals("Manos", StringComparison.OrdinalIgnoreCase) ? "var(--color-secondary-container)" : "#eae8e4"); color: var(--color-primary);">
+                                            @turno.Categoria
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-dark">@turno.ServicioNombre</td>
+                                    <td class="text-center"><span class="badge badge-stitch-surface">@turno.Duracion min</span></td>
+                                    <td>@turno.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@turno.Hora.ToString(@"hh\:mm") a @turno.HoraFin.ToString(@"hh\:mm") hs</td>
+                                    <td class="text-end fw-bold text-dark">$ @turno.Precio.ToString("N2")</td>
+                                    <td class="text-center"><span class="badge badge-stitch-warning">@turno.Estado</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sección de WhatsApp Comercial Oficial (5493513407604) -->
+            <div class="card card-stitch p-4 mb-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center p-2.5" style="background-color: #e8f5e9; color: #2e7d32;">
+                        <span class="material-symbols-outlined fs-3">chat</span>
+                    </div>
+                    <div>
+                        <span class="text-uppercase fw-semibold text-success small" style="letter-spacing: 0.08em; font-size: 0.75rem;">Coordinación Directa</span>
+                        <h4 class="h5 fw-bold text-dark mb-1">Avisale a Eli por WhatsApp</h4>
+                        <p class="text-muted small mb-0">Podés agilizar la verificación enviándole una notificación directa con el detalle de tu reserva listo para enviar.</p>
+                    </div>
+                </div>
+
+                <!-- Preview del mensaje preparado -->
+                <div class="p-3 rounded-3 mb-3 small" style="background-color: var(--color-surface-container-low); border-left: 3px solid var(--color-primary);">
+                    <div class="fw-bold text-muted small text-uppercase mb-1">Vista previa del mensaje pre-redactado:</div>
+                    <div class="text-muted fst-italic">
+                        “¡Hola Eli Beauty Care! 👋 Te comparto los datos de mi solicitud de reserva: Código único: <strong>@reservaRegistrada.CodigoReserva</strong>...”
+                    </div>
+                </div>
+
+                <!-- Aclaración obligatoria de envío manual -->
+                <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                    <span class="material-symbols-outlined text-primary fs-5">info</span>
+                    <div>
+                        <strong>Importante:</strong> El mensaje <em>no se envía automáticamente</em>. Al hacer clic en el botón a continuación, se abrirá WhatsApp en tu teléfono o computadora con los datos redactados para que vos presiones <strong>"Enviar"</strong> manualmente a Eli.
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="@GenerarEnlaceWhatsApp(reservaRegistrada)" target="_blank" rel="noopener noreferrer" class="btn btn-success d-inline-flex align-items-center gap-2 shadow-sm">
+                        <i class="bi bi-whatsapp fs-5"></i>
+                        <span>Contactar por WhatsApp</span>
+                    </a>
+                    <a href="/consultar?codigo=@reservaRegistrada.CodigoReserva" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined fs-5">search</span>
+                        <span>Ver mi reserva en Consulta</span>
+                    </a>
+                    <button class="btn btn-stitch-secondary" @onclick="ReiniciarFormulario">
+                        Hacer otra reserva
+                    </button>
+                    <a href="/" class="btn btn-link text-muted">Volver al Inicio</a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Stepper Visual de Cuatro Pasos (Stitch Atelier Design) -->
+        <div class="stitch-stepper-container">
+            <ol class="stitch-stepper-list">
+                <!-- Paso 1: Servicios -->
+                <li class="stitch-step-item @(itemsSeleccionados.Count > 0 ? "completed" : "active")">
+                    <div class="step-circle-wrapper">
+                        <span class="step-circle">
+                            @if (itemsSeleccionados.Count > 0)
+                            {
+                                <span class="material-symbols-outlined step-check-icon">check</span>
+                            }
+                            else
+                            {
+                                <span>1</span>
+                            }
+                        </span>
+                        <span class="step-title">1. Servicios</span>
+                    </div>
+                </li>
+
+                <li class="stitch-step-line @(itemsSeleccionados.Count > 0 ? "filled" : "")"></li>
+
+                <!-- Paso 2: Fecha y Hora -->
+                <li class="stitch-step-item @(TodosLosTurnosTienenHorario ? "completed" : (itemsSeleccionados.Count > 0 ? "active" : "pending"))">
+                    <div class="step-circle-wrapper">
+                        <span class="step-circle">
+                            @if (TodosLosTurnosTienenHorario)
+                            {
+                                <span class="material-symbols-outlined step-check-icon">check</span>
+                            }
+                            else
+                            {
+                                <span>2</span>
+                            }
+                        </span>
+                        <span class="step-title">2. Fecha y hora</span>
+                    </div>
+                </li>
+
+                <li class="stitch-step-line @(TodosLosTurnosTienenHorario ? "filled" : "")"></li>
+
+                <!-- Paso 3: Tus Datos -->
+                <li class="stitch-step-item @(DatosClientaCompletos ? "completed" : (TodosLosTurnosTienenHorario ? "active" : "pending"))">
+                    <div class="step-circle-wrapper">
+                        <span class="step-circle">
+                            @if (DatosClientaCompletos)
+                            {
+                                <span class="material-symbols-outlined step-check-icon">check</span>
+                            }
+                            else
+                            {
+                                <span>3</span>
+                            }
+                        </span>
+                        <span class="step-title">3. Tus datos</span>
+                    </div>
+                </li>
+
+                <li class="stitch-step-line @(DatosClientaCompletos ? "filled" : "")"></li>
+
+                <!-- Paso 4: Seña del 30% -->
+                <li class="stitch-step-item @(DatosClientaCompletos ? "active" : "pending")">
+                    <div class="step-circle-wrapper">
+                        <span class="step-circle">
+                            <span>4</span>
+                        </span>
+                        <span class="step-title">4. Seña del 30%</span>
+                    </div>
+                </li>
+            </ol>
+        </div>
+
+        @if (!string.IsNullOrEmpty(mensajeError))
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined fs-5">error</span>
+                    <div><strong>Atención:</strong> @mensajeError</div>
+                </div>
+                <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+            </div>
+        }
+
+        <!-- 1. SELECCIÓN DE SERVICIOS (STITCH SCREEN 2) -->
+        <div class="card card-stitch p-4 mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                <div>
+                    <span class="text-uppercase fw-semibold text-primary small d-block mb-1" style="letter-spacing: 0.1em; font-size: 0.75rem;">Paso 1 de 4 • Catálogo Atelier</span>
+                    <h3 class="h4 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Seleccioná tus servicios</h3>
+                    <p class="text-muted small mb-0">Podés elegir uno o varios servicios de Manos y Pies (incluso el mismo servicio varias veces):</p>
+                </div>
+                <!-- Filtros de categoría tipo pill de Stitch -->
+                <div class="stitch-filter-group" id="categoryFilter">
+                    <button type="button"
+                            class="stitch-pill-btn @(filtroCategoria == "TODOS" ? "active" : "")"
+                            @onclick='() => filtroCategoria = "TODOS"'>
+                        <span>Todos</span>
+                        <span class="stitch-pill-badge">@(serviciosDisponibles?.Count ?? 0)</span>
+                    </button>
+                    <button type="button"
+                            class="stitch-pill-btn @(filtroCategoria == "MANOS" ? "active" : "")"
+                            @onclick='() => filtroCategoria = "MANOS"'>
+                        <span>Manos</span>
+                        <span class="stitch-pill-badge">@(serviciosDisponibles?.Count(s => s.Categoria.Equals("Manos", StringComparison.OrdinalIgnoreCase)) ?? 0)</span>
+                    </button>
+                    <button type="button"
+                            class="stitch-pill-btn @(filtroCategoria == "PIES" ? "active" : "")"
+                            @onclick='() => filtroCategoria = "PIES"'>
+                        <span>Pies</span>
+                        <span class="stitch-pill-badge">@(serviciosDisponibles?.Count(s => s.Categoria.Equals("Pies", StringComparison.OrdinalIgnoreCase)) ?? 0)</span>
+                    </button>
+                </div>
+            </div>
+
+            @if (serviciosDisponibles == null)
+            {
+                <div class="d-flex align-items-center justify-content-center py-5">
+                    <div class="spinner-border text-primary me-3" role="status"></div>
+                    <span class="text-muted">Cargando catálogo de servicios del atelier...</span>
+                </div>
+            }
+            else if (serviciosDisponibles.Count == 0)
+            {
+                <div class="alert alert-warning mb-0">No hay servicios disponibles en este momento.</div>
+            }
+            else
+            {
+                var serviciosFiltrados = serviciosDisponibles.Where(s =>
+                    filtroCategoria == "TODOS" || s.Categoria.Equals(filtroCategoria, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                <div class="row g-3">
+                    @foreach (var servicio in serviciosFiltrados)
+                    {
+                        int cant = CantidadSeleccionada(servicio.Id);
+                        bool seleccionado = cant > 0;
+
+                        <div class="col-12 col-md-6 col-lg-6" @key="servicio.Id">
+                            <div class="service-card-stitch @(seleccionado ? "is-selected" : "")">
+                                <div>
+                                    <!-- Header: Categoría & Indicador Seleccionado -->
+                                    <div class="service-card-header">
+                                        <span class="category-badge @(servicio.Categoria.Equals("Manos", StringComparison.OrdinalIgnoreCase) ? "category-manos" : "category-pies")">
+                                            @servicio.Categoria
+                                        </span>
+                                        @if (seleccionado)
+                                        {
+                                            <div class="selected-pill">
+                                                <span class="material-symbols-outlined check-icon">check_circle</span>
+                                                <span>Seleccionado</span>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <!-- Título y Descripción -->
+                                    <h4 class="service-card-title">@servicio.Nombre</h4>
+                                    <p class="service-card-desc">@servicio.Descripcion</p>
+                                </div>
+
+                                <!-- Footer: Duración, Precio y Botón/Controles -->
+                                <div class="service-card-footer">
+                                    <div class="service-meta">
+                                        <span class="duration-badge">
+                                            <span class="material-symbols-outlined clock-icon">schedule</span>
+                                            <span>@servicio.Duracion min</span>
+                                        </span>
+                                        <span class="service-price">$ @servicio.Precio.ToString("N2")</span>
+                                    </div>
+
+                                    @if (cant > 0)
+                                    {
+                                        <div class="service-selected-controls">
+                                            <span class="selected-count-label">Cantidad: <strong>@cant</strong></span>
+                                            <div class="counter-btn-group">
+                                                <button type="button"
+                                                        class="counter-btn counter-minus"
+                                                        @onclick="() => QuitarUltimaInstancia(servicio.Id)"
+                                                        title="Disminuir cantidad"
+                                                        aria-label="Quitar uno">
+                                                    <span class="material-symbols-outlined">remove</span>
+                                                </button>
+                                                <span class="counter-value">@cant</span>
+                                                <button type="button"
+                                                        class="counter-btn counter-plus"
+                                                        @onclick="() => AgregarInstancia(servicio)"
+                                                        title="Aumentar cantidad"
+                                                        aria-label="Agregar otro">
+                                                    <span class="material-symbols-outlined">add</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn-select-stitch"
+                                                @onclick="() => AgregarInstancia(servicio)">
+                                            <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+                                            <span>Seleccionar servicio</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- 2. SELECCIÓN DE FECHA Y HORARIOS DISPONIBLES (STITCH SCREEN 3) -->
+        @if (TieneServiciosSeleccionados)
+        {
+            <div class="card card-stitch p-4 mb-4">
+                <div class="mb-3">
+                    <span class="text-uppercase fw-semibold text-primary small d-block mb-1" style="letter-spacing: 0.1em; font-size: 0.75rem;">Paso 2 de 4</span>
+                    <h3 class="h4 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Elegí fecha y horario disponible para cada turno</h3>
+                    <p class="text-muted small mb-0">
+                        Cada selección mantiene su propia fecha, duración y horario disponible. La agenda compartida trabaja en intervalos de 15 minutos y bloquea automáticamente los horarios ya elegidos para que ningún turno se superponga:
+                    </p>
+                </div>
+
+                <div class="row g-3">
+                    @for (int i = 0; i < itemsSeleccionados.Count; i++)
+                    {
+                        var item = itemsSeleccionados[i];
+                        int numInstancia = itemsSeleccionados.Take(i + 1).Count(x => x.ServicioId == item.ServicioId);
+                        int totalInstancias = itemsSeleccionados.Count(x => x.ServicioId == item.ServicioId);
+
+                        <div class="col-12 col-lg-6" @key="item.InstanciaId">
+                            <div class="card p-3 h-100 bg-white border shadow-sm">
+                                <div class="d-flex justify-content-between align-items-start mb-2 pb-2 border-bottom">
+                                    <div>
+                                        <span class="badge rounded-pill px-2 py-0.5 text-uppercase small" style="background-color: var(--color-secondary-container); color: var(--color-primary); font-size: 0.7rem;">
+                                            @item.Categoria
+                                        </span>
+                                        <h6 class="fw-bold text-dark mb-0 mt-1">
+                                            @item.Nombre
+                                            @if (totalInstancias > 1)
+                                            {
+                                                <span class="badge bg-secondary ms-1">#@numInstancia</span>
+                                            }
+                                        </h6>
+                                        <small class="text-muted">Duración: @item.Duracion min • $ @item.Precio.ToString("N2")</small>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" @onclick="() => QuitarInstancia(item)" title="Quitar este turno">&times;</button>
+                                </div>
+
+                                <!-- Fecha Individual -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-dark">Fecha del turno:</label>
+                                    <input type="date"
+                                           class="form-control form-control-sm"
+                                           min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                           value="@item.Fecha.ToString("yyyy-MM-dd")"
+                                           @onchange="(e) => CambiarFecha(item, e.Value?.ToString())" />
+                                </div>
+
+                                <!-- Horarios Disponibles -->
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold text-dark">Horario disponible (intervalos de 15 min):</label>
+                                    @if (item.Cargando)
+                                    {
+                                        <div class="d-flex align-items-center py-2 text-muted small">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                            <span>Consultando turnos libres para el @item.Fecha.ToString("dd/MM/yyyy")...</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        var horarios = ObtenerHorariosDisponiblesFiltrados(item);
+                                        if (horarios.Count == 0)
+                                        {
+                                            <div class="alert alert-warning py-1 px-2 small mb-0">
+                                                No hay horarios disponibles sin superposición para el @item.Fecha.ToString("dd/MM/yyyy"). Probá con otra fecha u otro horario en los demás turnos.
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-wrap gap-1.5" style="max-height: 140px; overflow-y: auto;">
+                                                @foreach (var turno in horarios)
+                                                {
+                                                    bool isSelected = item.HoraSeleccionada.HasValue && item.HoraSeleccionada.Value == turno.Hora;
+                                                    var finTurno = turno.Hora.Add(TimeSpan.FromMinutes(item.Duracion));
+                                                    <button type="button"
+                                                            class="slot-pill @(isSelected ? "active" : "")"
+                                                            title="@turno.Hora.ToString(@"hh\:mm") a @finTurno.ToString(@"hh\:mm") hs (@item.Duracion min)"
+                                                            @onclick="() => SeleccionarHora(item, turno.Hora.ToString())">
+                                                        @turno.Hora.ToString(@"hh\:mm")
+                                                    </button>
+                                                }
+                                            </div>
+                                            @if (item.HoraSeleccionada.HasValue)
+                                            {
+                                                var fin = item.HoraSeleccionada.Value.Add(TimeSpan.FromMinutes(item.Duracion));
+                                                <div class="mt-2 small text-success fw-semibold d-flex align-items-center gap-1">
+                                                    <span class="material-symbols-outlined fs-6">check_circle</span>
+                                                    Seleccionado: @item.HoraSeleccionada.Value.ToString(@"hh\:mm") a @fin.ToString(@"hh\:mm") hs (@item.Duracion min)
+                                                </div>
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- 3. DATOS DE LA CLIENTA (STITCH SCREEN 4) -->
+        @if (TieneServiciosSeleccionados && TodosLosTurnosTienenHorario)
+        {
+            <div class="card card-stitch p-4 mb-4">
+                <div class="mb-3">
+                    <span class="text-uppercase fw-semibold text-primary small d-block mb-1" style="letter-spacing: 0.1em; font-size: 0.75rem;">Paso 3 de 4</span>
+                    <h3 class="h4 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Datos de contacto de la clienta</h3>
+                    <p class="text-muted small mb-0">Ingresá tu teléfono para identificarte (formato argentino de 10 dígitos, sin 0 ni 15). Si ya te atendiste con nosotros, completaremos tus datos automáticamente:</p>
+                </div>
+
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-12 col-md-5">
+                        <label class="form-label small fw-bold">Teléfono (ej: 3515548895):</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted small">+54</span>
+                            <input type="tel"
+                                   class="form-control @(errorTelefono != null ? "is-invalid" : "")"
+                                   placeholder="Ingresá tu número de teléfono"
+                                   value="@telefonoInput"
+                                   @oninput="OnTelefonoInputChanged" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <button type="button" class="btn btn-outline-primary w-100 d-inline-flex align-items-center justify-content-center gap-1" @onclick="BuscarClienta" disabled="@string.IsNullOrWhiteSpace(telefonoInput)">
+                            <span class="material-symbols-outlined fs-6">search</span>
+                            <span>Buscar</span>
+                        </button>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorTelefono))
+                {
+                    <div class="text-danger small mb-3 d-flex align-items-center gap-1">
+                        <span class="material-symbols-outlined fs-6">warning</span>
+                        <span>@errorTelefono</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(mensajeClienta))
+                {
+                    <div class="alert @(clientaExiste ? "alert-success" : "alert-info") py-2 px-3 small mb-3">
+                        @mensajeClienta
+                    </div>
+                }
+
+                @if (busquedaClientaRealizada && string.IsNullOrEmpty(errorTelefono))
+                {
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold">Nombre:</label>
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Tu nombre"
+                                   @bind="clienteNombre"
+                                   disabled="@clientaExiste" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold">Apellido:</label>
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Tu apellido"
+                                   @bind="clienteApellido"
+                                   disabled="@clientaExiste" />
+                        </div>
+                    </div>
+                    @if (clientaExiste)
+                    {
+                        <small class="text-muted mt-2 d-block">Clienta registrada en el sistema.</small>
+                    }
+                }
+            </div>
+        }
+
+        <!-- 4. REVISIÓN DE RESERVA, SEÑA 30% Y COMPROBANTE (STITCH SCREEN 5) -->
+        @if (TieneServiciosSeleccionados && TodosLosTurnosTienenHorario && DatosClientaCompletos)
+        {
+            <div class="card card-stitch p-4 mb-4">
+                <div class="mb-4">
+                    <span class="text-uppercase fw-semibold text-primary small d-block mb-1" style="letter-spacing: 0.1em; font-size: 0.75rem;">Paso 4 de 4 • Confirmación Final</span>
+                    <h3 class="h4 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Resumen de la reserva y seña</h3>
+                    <p class="text-muted small mb-0">Para garantizar tu lugar exclusivo solicitamos una seña del 30% por transferencia bancaria. El 70% restante lo abonás el día de tu cita.</p>
+                </div>
+
+                <!-- Tabla Resumen Completa de Servicios -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-stitch mb-0">
+                        <thead>
+                            <tr>
+                                <th>Servicio (Categoría – Nombre)</th>
+                                <th>Fecha</th>
+                                <th>Horario</th>
+                                <th class="text-center">Duración</th>
+                                <th class="text-end">Precio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in itemsSeleccionados)
+                            {
+                                var inicio = s.HoraSeleccionada!.Value;
+                                var fin = inicio.Add(TimeSpan.FromMinutes(s.Duracion));
+                                <tr>
+                                    <td class="fw-bold text-dark">@s.Categoria.ToUpper() – @s.Nombre</td>
+                                    <td>@s.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@inicio.ToString(@"hh\:mm") a @fin.ToString(@"hh\:mm") hs</td>
+                                    <td class="text-center"><span class="badge badge-stitch-surface">@s.Duracion min</span></td>
+                                    <td class="text-end fw-bold text-dark">$ @s.Precio.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold">Importe Total:</td>
+                                <td class="text-end fw-bold fs-6">$ @ImporteTotal.ToString("N2")</td>
+                            </tr>
+                            <tr style="background-color: var(--color-surface-container-low);">
+                                <td colspan="4" class="text-end fw-bold text-primary">
+                                    Adelanto a transferir (30 % obligatorio):
+                                </td>
+                                <td class="text-end fw-bold text-primary fs-5">
+                                    $ @MontoAdelanto.ToString("N2")
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end text-muted small">
+                                    Restante a abonar en el salón (70%):
+                                </td>
+                                <td class="text-end fw-semibold text-dark">
+                                    $ @((ImporteTotal - MontoAdelanto).ToString("N2"))
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Left: Bank details card -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card p-4 h-100 border-0" style="background-color: var(--color-surface-container-low); border-radius: 16px;">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-white text-primary" style="width: 44px; height: 44px; border: 1px solid #eae8e4;">
+                                    <span class="material-symbols-outlined fs-5">account_balance</span>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-0 text-dark fs-6">Datos bancarios para transferir la seña</h5>
+                                    <small class="text-muted">Cuenta oficial verificada para señas de atelier</small>
+                                </div>
+                            </div>
+
+                            <div class="p-3 rounded-3 bg-white border mb-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Monto exacto de seña (30%)</small>
+                                    <span class="h4 fw-bold text-primary mb-0">$ @MontoAdelanto.ToString("N2")</span>
+                                </div>
+                                <span class="badge badge-stitch-primary">
+                                    <span class="material-symbols-outlined fs-6 align-middle me-1">lock</span>
+                                    Bloquea tu horario
+                                </span>
+                            </div>
+
+                            <div class="row g-2 small text-muted">
+                                <div class="col-12 col-md-6">
+                                    <strong>Titular:</strong> Eli Beauty Care
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <strong>Alias:</strong> <span class="badge bg-secondary">eli.beauty.care</span>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <strong>Banco:</strong> Mercado Pago / Santander
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <strong>Monto exacto:</strong> <span class="fw-bold text-primary">$ @MontoAdelanto.ToString("N2")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: File upload and submit -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card p-4 h-100 border d-flex flex-column justify-content-between" style="border-radius: 16px;">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-danger">Obligatorio</span>
+                                    <h6 class="fw-bold mb-0 text-dark">Adjuntar comprobante de transferencia bancaria</h6>
+                                </div>
+                                <p class="small text-muted mb-3">
+                                    Subí la captura de pantalla o recibo de tu transferencia bancaria (formatos permitidos: JPG, PNG o PDF, tamaño máx. 5 MB). Sin comprobante no es posible enviar la reserva.
+                                </p>
+
+                                <InputFile OnChange="OnArchivoSeleccionado" accept=".jpg,.jpeg,.png,.pdf" class="form-control mb-2" />
+
+                                @if (!string.IsNullOrEmpty(errorArchivo))
+                                {
+                                    <div class="text-danger small mb-2">
+                                        <span class="material-symbols-outlined fs-6 align-middle me-1">warning</span> @errorArchivo
+                                    </div>
+                                }
+
+                                @if (archivoComprobante != null)
+                                {
+                                    <div class="alert alert-success py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                                        <span class="material-symbols-outlined text-success fs-5">check_circle</span>
+                                        <div>
+                                            <strong>Comprobante seleccionado:</strong> @archivoComprobante.Name
+                                            <span class="text-muted">(@((archivoComprobante.Size / 1024.0).ToString("N1")) KB)</span>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <small class="text-danger fw-bold d-block mb-3">
+                                        * Es requisito indispensable adjuntar el comprobante para confirmar la reserva.
+                                    </small>
+                                }
+                            </div>
+
+                            <button type="button"
+                                    class="btn btn-primary btn-lg w-100 shadow d-flex align-items-center justify-content-center gap-2 mt-3"
+                                    disabled="@(!PuedeEnviar || enviando)"
+                                    @onclick="EnviarReserva">
+                                @if (enviando)
+                                {
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <span>Verificando y enviando reserva...</span>
+                                }
+                                else
+                                {
+                                    <span class="material-symbols-outlined fs-5">send</span>
+                                    <span>Confirmar y Enviar Reserva</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    public class ServicioSeleccionadoItem
+    {
+        public Guid InstanciaId { get; set; } = Guid.NewGuid();
+        public int ServicioId { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public int Duracion { get; set; }
+        public decimal Precio { get; set; }
+        public DateTime Fecha { get; set; } = DateTime.Today;
+        public TimeSpan? HoraSeleccionada { get; set; }
+        public List<TurnoDTO> HorariosDisponiblesBase { get; set; } = new();
+        public DateTime? FechaConsultada { get; set; }
+        public bool Cargando { get; set; }
+        public string? ErrorCarga { get; set; }
+    }
+
+    private const string NumeroComercialWhatsApp = "5493513407604";
+
+    private List<ServicioListadoDTO>? serviciosDisponibles;
+    private List<ServicioSeleccionadoItem> itemsSeleccionados = new();
+    private string filtroCategoria = "TODOS";
+
+    // Clienta
+    private string telefonoInput = "";
+    private string? errorTelefono = null;
+    private bool busquedaClientaRealizada = false;
+    private bool clientaExiste = false;
+    private int clienteId = 0;
+    private string clienteNombre = "";
+    private string clienteApellido = "";
+    private string mensajeClienta = "";
+
+    // Comprobante
+    private IBrowserFile? archivoComprobante = null;
+    private string? errorArchivo = null;
+
+    // Estado general
+    private string? mensajeError = null;
+    private bool enviando = false;
+    private ReservaDetalleDTO? reservaRegistrada = null;
+    private bool codigoCopiado = false;
+
+    private readonly List<string> CategoriasDisponibles = new() { "Manos", "Pies" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarServicios();
+    }
+
+    private async Task CargarServicios()
+    {
+        var resp = await http.GetAsync<List<ServicioListadoDTO>>("api/servicio");
+        if (!resp.Error && resp.Respuesta != null)
+        {
+            serviciosDisponibles = resp.Respuesta;
+        }
+        else
+        {
+            serviciosDisponibles = new List<ServicioListadoDTO>();
+            mensajeError = resp.Mensaje ?? "No se pudieron cargar los servicios.";
+        }
+    }
+
+    private int CantidadSeleccionada(int servicioId) =>
+        itemsSeleccionados.Count(x => x.ServicioId == servicioId);
+
+    private bool TieneServiciosSeleccionados =>
+        itemsSeleccionados.Count > 0;
+
+    private decimal ImporteTotal =>
+        itemsSeleccionados.Sum(s => s.Precio);
+
+    private decimal MontoAdelanto =>
+        Math.Round(ImporteTotal * 0.30m, 2);
+
+    private bool TodosLosTurnosTienenHorario =>
+        TieneServiciosSeleccionados &&
+        itemsSeleccionados.All(s => s.HoraSeleccionada.HasValue);
+
+    private bool DatosClientaCompletos =>
+        busquedaClientaRealizada &&
+        string.IsNullOrEmpty(errorTelefono) &&
+        TelefonoHelper.ValidarYNormalizar(telefonoInput, out _, out _) &&
+        !string.IsNullOrWhiteSpace(clienteNombre) &&
+        !string.IsNullOrWhiteSpace(clienteApellido);
+
+    private bool PuedeEnviar =>
+        TieneServiciosSeleccionados &&
+        TodosLosTurnosTienenHorario &&
+        DatosClientaCompletos &&
+        archivoComprobante != null;
+
+    private async Task AgregarInstancia(ServicioListadoDTO servicio)
+    {
+        var nuevoItem = new ServicioSeleccionadoItem
+        {
+            InstanciaId = Guid.NewGuid(),
+            ServicioId = servicio.Id,
+            Nombre = servicio.Nombre,
+            Categoria = servicio.Categoria,
+            Duracion = servicio.Duracion,
+            Precio = servicio.Precio,
+            Fecha = DateTime.Today,
+            HoraSeleccionada = null,
+            Cargando = true
+        };
+        itemsSeleccionados.Add(nuevoItem);
+
+        await ConsultarDisponibilidadServicio(nuevoItem);
+    }
+
+    private void QuitarInstancia(ServicioSeleccionadoItem item)
+    {
+        itemsSeleccionados.Remove(item);
+        RecalcularSuperposiciones(item.InstanciaId);
+    }
+
+    private void QuitarUltimaInstancia(int servicioId)
+    {
+        var ultimo = itemsSeleccionados.LastOrDefault(x => x.ServicioId == servicioId);
+        if (ultimo != null)
+        {
+            itemsSeleccionados.Remove(ultimo);
+            RecalcularSuperposiciones(ultimo.InstanciaId);
+        }
+    }
+
+    private async Task CambiarFecha(ServicioSeleccionadoItem item, string? valorFecha)
+    {
+        if (DateTime.TryParse(valorFecha, out var nuevaFecha))
+        {
+            if (nuevaFecha.Date < DateTime.Today)
+            {
+                nuevaFecha = DateTime.Today;
+            }
+
+            if (item.Fecha.Date != nuevaFecha.Date)
+            {
+                item.Fecha = nuevaFecha.Date;
+                item.HoraSeleccionada = null;
+                item.HorariosDisponiblesBase.Clear();
+                item.FechaConsultada = null;
+
+                RecalcularSuperposiciones(item.InstanciaId);
+                await ConsultarDisponibilidadServicio(item);
+            }
+        }
+    }
+
+    private void SeleccionarHora(ServicioSeleccionadoItem item, string? horaStr)
+    {
+        if (TimeSpan.TryParse(horaStr, out var hora))
+        {
+            item.HoraSeleccionada = hora;
+        }
+        else
+        {
+            item.HoraSeleccionada = null;
+        }
+
+        RecalcularSuperposiciones(item.InstanciaId);
+    }
+
+    private async Task ConsultarDisponibilidadServicio(ServicioSeleccionadoItem item)
+    {
+        var fechaConsulta = item.Fecha.Date;
+        item.Cargando = true;
+        item.ErrorCarga = null;
+        item.HorariosDisponiblesBase.Clear();
+        item.FechaConsultada = null;
+
+        try
+        {
+            var url = $"api/turno/disponibilidad?fecha={fechaConsulta:yyyy-MM-dd}&servicioId={item.ServicioId}";
+            var resp = await http.GetAsync<List<TurnoDTO>>(url);
+
+            if (item.Fecha.Date == fechaConsulta)
+            {
+                if (!resp.Error && resp.Respuesta != null)
+                {
+                    item.HorariosDisponiblesBase = resp.Respuesta
+                        .Where(t => t.Fecha.Date == fechaConsulta)
+                        .ToList();
+                    item.FechaConsultada = fechaConsulta;
+                }
+                else
+                {
+                    item.HorariosDisponiblesBase = new List<TurnoDTO>();
+                    item.FechaConsultada = fechaConsulta;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            if (item.Fecha.Date == fechaConsulta)
+            {
+                item.HorariosDisponiblesBase = new List<TurnoDTO>();
+                item.FechaConsultada = fechaConsulta;
+                item.ErrorCarga = ex.Message;
+            }
+        }
+        finally
+        {
+            if (item.Fecha.Date == fechaConsulta)
+            {
+                item.Cargando = false;
+            }
+        }
+
+        ValidarHoraSeleccionada(item);
+        RecalcularSuperposiciones(item.InstanciaId);
+        StateHasChanged();
+    }
+
+    private List<TurnoDTO> ObtenerHorariosDisponiblesFiltrados(ServicioSeleccionadoItem itemActual)
+    {
+        if (itemActual.FechaConsultada == null || itemActual.FechaConsultada.Value.Date != itemActual.Fecha.Date)
+        {
+            return new List<TurnoDTO>();
+        }
+
+        if (itemActual.HorariosDisponiblesBase == null || itemActual.HorariosDisponiblesBase.Count == 0)
+        {
+            return new List<TurnoDTO>();
+        }
+
+        var duracionActual = TimeSpan.FromMinutes(itemActual.Duracion);
+        var intervalosOcupados = new List<(TimeSpan Inicio, TimeSpan Fin)>();
+
+        foreach (var otro in itemsSeleccionados)
+        {
+            if (otro.InstanciaId == itemActual.InstanciaId)
+            {
+                continue;
+            }
+
+            if (otro.Fecha.Date == itemActual.Fecha.Date && otro.HoraSeleccionada.HasValue)
+            {
+                var inicioOtro = otro.HoraSeleccionada.Value;
+                var finOtro = inicioOtro.Add(TimeSpan.FromMinutes(otro.Duracion));
+                intervalosOcupados.Add((inicioOtro, finOtro));
+            }
+        }
+
+        var horaCierre = new TimeSpan(15, 0, 0);
+        var resultado = new List<TurnoDTO>();
+
+        foreach (var candidato in itemActual.HorariosDisponiblesBase)
+        {
+            if (candidato.Fecha.Date != itemActual.Fecha.Date)
+            {
+                continue;
+            }
+
+            var inicioCandidato = candidato.Hora;
+            var finCandidato = inicioCandidato + duracionActual;
+
+            if (finCandidato > horaCierre)
+            {
+                continue;
+            }
+
+            bool colisiona = false;
+            foreach (var ocupado in intervalosOcupados)
+            {
+                if (SeSuperpone(inicioCandidato, finCandidato, ocupado.Inicio, ocupado.Fin))
+                {
+                    colisiona = true;
+                    break;
+                }
+            }
+
+            if (!colisiona)
+            {
+                resultado.Add(candidato);
+            }
+        }
+
+        return resultado;
+    }
+
+    private static bool SeSuperpone(TimeSpan inicioA, TimeSpan finA, TimeSpan inicioB, TimeSpan finB)
+    {
+        return inicioA < finB && inicioB < finA;
+    }
+
+    private void ValidarHoraSeleccionada(ServicioSeleccionadoItem item)
+    {
+        if (item.HoraSeleccionada.HasValue)
+        {
+            var disponibles = ObtenerHorariosDisponiblesFiltrados(item);
+            if (!disponibles.Any(d => d.Hora == item.HoraSeleccionada.Value))
+            {
+                item.HoraSeleccionada = null;
+            }
+        }
+    }
+
+    private void RecalcularSuperposiciones(Guid instanciaIdModificada)
+    {
+        foreach (var otro in itemsSeleccionados)
+        {
+            if (otro.InstanciaId == instanciaIdModificada)
+            {
+                continue;
+            }
+
+            if (otro.HoraSeleccionada.HasValue)
+            {
+                var disponibles = ObtenerHorariosDisponiblesFiltrados(otro);
+                if (!disponibles.Any(d => d.Hora == otro.HoraSeleccionada.Value))
+                {
+                    otro.HoraSeleccionada = null;
+                }
+            }
+        }
+    }
+
+    private void OnTelefonoInputChanged(ChangeEventArgs e)
+    {
+        telefonoInput = e.Value?.ToString() ?? "";
+        errorTelefono = null;
+        mensajeClienta = "";
+
+        if (!string.IsNullOrWhiteSpace(telefonoInput))
+        {
+            if (!TelefonoHelper.ValidarYNormalizar(telefonoInput, out _, out var err))
+            {
+                errorTelefono = err;
+            }
+        }
+    }
+
+    private async Task BuscarClienta()
+    {
+        mensajeClienta = "";
+        errorTelefono = null;
+
+        if (!TelefonoHelper.ValidarYNormalizar(telefonoInput, out var normalizado, out var err))
+        {
+            errorTelefono = err;
+            mensajeClienta = err;
+            clientaExiste = false;
+            busquedaClientaRealizada = false;
+            return;
+        }
+
+        telefonoInput = normalizado;
+        var resp = await http.GetAsync<ClienteDTO>($"api/cliente/telefono/{normalizado}");
+        busquedaClientaRealizada = true;
+
+        if (!resp.Error && resp.Respuesta != null)
+        {
+            clienteId = resp.Respuesta.Id;
+            clienteNombre = resp.Respuesta.Nombre;
+            clienteApellido = resp.Respuesta.Apellido;
+            clientaExiste = true;
+            mensajeClienta = "¡Clienta registrada encontrada!";
+        }
+        else
+        {
+            clienteId = 0;
+            clienteNombre = "";
+            clienteApellido = "";
+            clientaExiste = false;
+            mensajeClienta = "No encontramos un registro previo con este teléfono. Por favor completá tu nombre y apellido para registrarte.";
+        }
+    }
+
+    private void OnArchivoSeleccionado(InputFileChangeEventArgs e)
+    {
+        errorArchivo = null;
+        var archivo = e.File;
+        if (archivo == null)
+        {
+            archivoComprobante = null;
+            return;
+        }
+
+        if (archivo.Size > 5 * 1024 * 1024)
+        {
+            errorArchivo = "El comprobante no puede superar los 5 MB.";
+            archivoComprobante = null;
+            return;
+        }
+
+        var extension = Path.GetExtension(archivo.Name).ToLowerInvariant();
+        if (extension != ".jpg" && extension != ".jpeg" && extension != ".png" && extension != ".pdf")
+        {
+            errorArchivo = "El comprobante debe ser un archivo JPG, JPEG, PNG o PDF.";
+            archivoComprobante = null;
+            return;
+        }
+
+        archivoComprobante = archivo;
+    }
+
+    private async Task EnviarReserva()
+    {
+        if (!PuedeEnviar)
+        {
+            return;
+        }
+
+        if (!TelefonoHelper.ValidarYNormalizar(telefonoInput, out var telefonoFinal, out var errorTel))
+        {
+            mensajeError = errorTel;
+            errorTelefono = errorTel;
+            return;
+        }
+
+        enviando = true;
+        mensajeError = null;
+
+        try
+        {
+            foreach (var item in itemsSeleccionados)
+            {
+                var respDispo = await http.GetAsync<List<TurnoDTO>>($"api/turno/disponibilidad?fecha={item.Fecha:yyyy-MM-dd}&servicioId={item.ServicioId}");
+                if (respDispo.Error || respDispo.Respuesta == null)
+                {
+                    mensajeError = $"No se pudo verificar la disponibilidad del servicio '{item.Categoria.ToUpper()} – {item.Nombre}' para el {item.Fecha:dd/MM/yyyy}. Por favor intentá nuevamente.";
+                    enviando = false;
+                    return;
+                }
+
+                bool sigueDisponible = respDispo.Respuesta.Any(t => t.Fecha.Date == item.Fecha.Date && t.Hora == item.HoraSeleccionada!.Value);
+                if (!sigueDisponible)
+                {
+                    mensajeError = $"El turno de las {item.HoraSeleccionada!.Value.ToString(@"hh\:mm")} hs para '{item.Categoria.ToUpper()} – {item.Nombre}' el {item.Fecha:dd/MM/yyyy} ya no está disponible. Por favor seleccioná otro horario.";
+                    item.HorariosDisponiblesBase = respDispo.Respuesta.Where(t => t.Fecha.Date == item.Fecha.Date).ToList();
+                    item.FechaConsultada = item.Fecha.Date;
+                    item.HoraSeleccionada = null;
+                    RecalcularSuperposiciones(item.InstanciaId);
+                    enviando = false;
+                    return;
+                }
+            }
+
+            for (int i = 0; i < itemsSeleccionados.Count; i++)
+            {
+                var t1 = itemsSeleccionados[i];
+                var fin1 = t1.HoraSeleccionada!.Value + TimeSpan.FromMinutes(t1.Duracion);
+
+                for (int j = i + 1; j < itemsSeleccionados.Count; j++)
+                {
+                    var t2 = itemsSeleccionados[j];
+                    if (t1.Fecha.Date == t2.Fecha.Date)
+                    {
+                        var fin2 = t2.HoraSeleccionada!.Value + TimeSpan.FromMinutes(t2.Duracion);
+                        if (SeSuperpone(t1.HoraSeleccionada!.Value, fin1, t2.HoraSeleccionada!.Value, fin2))
+                        {
+                            mensajeError = $"Los turnos de '{t1.Categoria.ToUpper()} – {t1.Nombre}' y '{t2.Categoria.ToUpper()} – {t2.Nombre}' tienen horarios superpuestos el {t1.Fecha:dd/MM/yyyy}. Por favor seleccioná horarios diferentes.";
+                            enviando = false;
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (clienteId == 0)
+            {
+                var nuevoCliente = new ClienteDTO
+                {
+                    Nombre = clienteNombre.Trim(),
+                    Apellido = clienteApellido.Trim(),
+                    Telefono = telefonoFinal
+                };
+
+                var respCliente = await http.PostAsync<ClienteDTO, int>("api/cliente", nuevoCliente);
+                if (respCliente.Error || respCliente.Respuesta <= 0)
+                {
+                    mensajeError = respCliente.Mensaje ?? "No se pudo registrar la clienta. Verificá los datos ingresados.";
+                    enviando = false;
+                    return;
+                }
+                clienteId = respCliente.Respuesta;
+            }
+
+            using var formData = new MultipartFormDataContent();
+            formData.Add(new StringContent(clienteId.ToString()), "ClienteId");
+
+            int index = 0;
+            foreach (var item in itemsSeleccionados)
+            {
+                formData.Add(new StringContent(item.ServicioId.ToString()), $"Turnos[{index}].ServicioId");
+                formData.Add(new StringContent(item.Fecha.ToString("yyyy-MM-dd")), $"Turnos[{index}].Fecha");
+                formData.Add(new StringContent(item.HoraSeleccionada!.Value.ToString(@"hh\:mm\:ss")), $"Turnos[{index}].Hora");
+                index++;
+            }
+
+            var fileStream = archivoComprobante!.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var fileContent = new StreamContent(fileStream);
+            if (!string.IsNullOrEmpty(archivoComprobante.ContentType))
+            {
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(archivoComprobante.ContentType);
+            }
+            formData.Add(fileContent, "comprobante", archivoComprobante.Name);
+
+            var respuestaHttp = await httpClient.PostAsync("api/reserva", formData);
+
+            if (respuestaHttp.IsSuccessStatusCode)
+            {
+                reservaRegistrada = await respuestaHttp.Content.ReadFromJsonAsync<ReservaDetalleDTO>();
+                codigoCopiado = false;
+            }
+            else
+            {
+                var errorServidor = await HttpResp<ReservaDetalleDTO>.LeerMensajeAsync(respuestaHttp);
+                mensajeError = !string.IsNullOrEmpty(errorServidor)
+                    ? errorServidor
+                    : "No se pudo registrar la reserva. Verificá los datos e intentá nuevamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Ocurrió un error al procesar la reserva: " + ex.Message;
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    private async Task CopiarCodigo()
+    {
+        if (reservaRegistrada == null) return;
+        try
+        {
+            await js.InvokeVoidAsync("navigator.clipboard.writeText", reservaRegistrada.CodigoReserva);
+            codigoCopiado = true;
+        }
+        catch
+        {
+            codigoCopiado = true;
+        }
+    }
+
+    private string GenerarEnlaceWhatsApp(ReservaDetalleDTO r)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("¡Hola Eli Beauty Care! 👋");
+        sb.AppendLine("Te comparto los datos de mi solicitud de reserva:");
+        sb.AppendLine();
+        sb.AppendLine($"📋 *Código único:* {r.CodigoReserva}");
+        sb.AppendLine($"👤 *Clienta:* {r.Cliente.Nombre} {r.Cliente.Apellido}");
+        sb.AppendLine($"📱 *Teléfono:* {r.Cliente.Telefono}");
+        sb.AppendLine($"📌 *Estado:* {r.Estado}");
+        sb.AppendLine();
+        sb.AppendLine("💅 *Servicios y Turnos:*");
+        foreach (var t in r.Turnos)
+        {
+            sb.AppendLine($"• {t.ServicioCompleto} | {t.Fecha:dd/MM/yyyy} de {t.Hora:hh\\:mm} a {t.HoraFin:hh\\:mm} hs ({t.Duracion} min) - $ {t.Precio:N2}");
+        }
+        sb.AppendLine();
+        sb.AppendLine("💰 *Resumen Económico:*");
+        sb.AppendLine($"• Total de la reserva: $ {r.ImporteTotal:N2}");
+        var senia = r.Pago?.Monto ?? Math.Round(r.ImporteTotal * 0.30m, 2);
+        sb.AppendLine($"• Seña del 30%: $ {senia:N2}");
+        sb.AppendLine($"• Importe transferido: $ {senia:N2}");
+        var restante = r.ImporteTotal - senia;
+        sb.AppendLine($"• Restante a pagar en el salón: $ {restante:N2}");
+        sb.AppendLine();
+        sb.AppendLine("Adjunté mi comprobante de transferencia bancaria para su verificación. ¡Muchas gracias!");
+
+        string textoCodificado = Uri.EscapeDataString(sb.ToString());
+        string numeroDestino = TelefonoHelper.FormatoWhatsApp(NumeroComercialWhatsApp);
+
+        return $"https://wa.me/{numeroDestino}?text={textoCodificado}";
+    }
+
+    private void ReiniciarFormulario()
+    {
+        reservaRegistrada = null;
+        codigoCopiado = false;
+        itemsSeleccionados.Clear();
+        archivoComprobante = null;
+        errorArchivo = null;
+        mensajeError = null;
+        busquedaClientaRealizada = false;
+        clientaExiste = false;
+        clienteId = 0;
+        clienteNombre = "";
+        clienteApellido = "";
+        telefonoInput = "";
+        errorTelefono = null;
+        mensajeClienta = "";
+    }
+}

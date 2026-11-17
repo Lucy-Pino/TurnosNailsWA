@@ -1,23 +1,284 @@
 ﻿@page "/turnos"
-@inject HttpClient http
+@attribute [Authorize]
+@using TurnosNailsWA.Shared.DTO
+@using TurnosNailsWA.Servicio.ServicioHTTP
+@inject IHttpService http
 
-<h3>Lista de Turnos</h3>
+<PageTitle>Agenda del Atelier • Eli Beauty Care</PageTitle>
 
-<p>@mensaje</p>
+<div class="container py-4">
+    <!-- Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill text-uppercase small" style="background-color: var(--color-secondary-container); color: var(--color-primary); font-size: 0.72rem;">Consola Operativa</span>
+                <span class="text-muted small">•</span>
+                <span class="text-muted small">Agenda del Atelier</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Agenda Unificada de Cabina</h1>
+            <p class="text-muted small mb-0">Planificación de turnos de manicura y pedicura en intervalos de 15 minutos sin solapamiento.</p>
+        </div>
+
+        <!-- Category legend pills -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge px-3 py-1.5 rounded-pill text-uppercase" style="background-color: var(--color-secondary-container); color: var(--color-primary); font-size: 0.72rem;">
+                <span class="material-symbols-outlined fs-6 align-middle me-1">brush</span> Manos
+            </span>
+            <span class="badge px-3 py-1.5 rounded-pill text-uppercase" style="background-color: #eae8e4; color: var(--color-primary); font-size: 0.72rem;">
+                <span class="material-symbols-outlined fs-6 align-middle me-1">self_improvement</span> Pies
+            </span>
+        </div>
+    </div>
+
+    <!-- Barra de Controles de la Agenda -->
+    <div class="card card-stitch p-3 mb-4">
+        <div class="row g-3 align-items-center justify-content-between">
+            <!-- Selector de Tipo de Vista (Pills) -->
+            <div class="col-12 col-md-auto">
+                <div class="d-flex gap-1.5">
+                    <button type="button" class="category-tab-btn @(modoVista == ModoVista.Diaria ? "active" : "")"
+                            @onclick="() => CambiarModo(ModoVista.Diaria)">
+                        Día
+                    </button>
+                    <button type="button" class="category-tab-btn @(modoVista == ModoVista.Semanal ? "active" : "")"
+                            @onclick="() => CambiarModo(ModoVista.Semanal)">
+                        Semana
+                    </button>
+                    <button type="button" class="category-tab-btn @(modoVista == ModoVista.Mensual ? "active" : "")"
+                            @onclick="() => CambiarModo(ModoVista.Mensual)">
+                        Mes
+                    </button>
+                    <button type="button" class="category-tab-btn @(modoVista == ModoVista.Todos ? "active" : "")"
+                            @onclick="() => CambiarModo(ModoVista.Todos)">
+                        Todos
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navegación de Período -->
+            @if (modoVista != ModoVista.Todos)
+            {
+                <div class="col-12 col-md-auto d-flex align-items-center gap-2 flex-wrap">
+                    <button class="btn btn-stitch-secondary btn-sm" @onclick="RetrocederPeriodo" title="Período anterior">
+                        <span class="material-symbols-outlined fs-6 align-middle">chevron_left</span>
+                    </button>
+                    <button class="btn btn-stitch-secondary btn-sm" @onclick="IrAHoy">
+                        Hoy
+                    </button>
+                    <button class="btn btn-stitch-secondary btn-sm" @onclick="AvanzarPeriodo" title="Período siguiente">
+                        <span class="material-symbols-outlined fs-6 align-middle">chevron_right</span>
+                    </button>
+                    <input type="date" class="form-control form-control-sm" style="width: auto;"
+                           value="@fechaReferencia.ToString("yyyy-MM-dd")"
+                           @onchange="OnFechaCambiada" />
+                </div>
+
+                <div class="col-12 col-lg text-lg-end">
+                    <span class="fw-bold text-primary fs-6" style="font-family: 'Playfair Display', serif;">@TituloPeriodo</span>
+                </div>
+            }
+            else
+            {
+                <div class="col-12 col-md text-md-end text-muted small">
+                    Mostrando todos los turnos del atelier
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="alert alert-info py-2 px-3 small mb-4">@mensaje</div>
+    }
+
+    @if (turnos == null)
+    {
+        <div class="d-flex align-items-center justify-content-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Cargando turnos de la agenda...</span>
+        </div>
+    }
+    else
+    {
+        var turnosFiltrados = ObtenerTurnosFiltrados();
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">Turnos en este período: <strong class="text-dark">@turnosFiltrados.Count</strong></span>
+        </div>
+
+        @if (turnosFiltrados.Count == 0)
+        {
+            <div class="card card-stitch p-4 text-center text-muted">
+                No hay turnos registrados para el período seleccionado (@TituloPeriodo).
+            </div>
+        }
+        else
+        {
+            <div class="card card-stitch p-0 overflow-hidden mb-4">
+                <div class="table-responsive">
+                    <table class="table table-stitch mb-0">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Horario</th>
+                                <th>Clienta</th>
+                                <th>Servicio reservado</th>
+                                <th>Código Reserva</th>
+                                <th class="text-center">Estado del turno</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var turno in turnosFiltrados)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-dark">@turno.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="badge badge-stitch-surface">@turno.Hora.ToString(@"hh\:mm") hs</span>
+                                    </td>
+                                    <td>@turno.ClienteNombre</td>
+                                    <td class="fw-bold text-primary">@turno.ServicioCompleto</td>
+                                    <td><code class="font-monospace text-dark">@turno.CodigoReserva</code></td>
+                                    <td class="text-center">
+                                        <span class="badge @ObtenerClaseBadge(turno.Estado)">
+                                            @turno.Estado
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
 
 @code {
+    private enum ModoVista
+    {
+        Diaria,
+        Semanal,
+        Mensual,
+        Todos
+    }
+
+    private List<TurnoListadoDTO>? turnos;
+    private ModoVista modoVista = ModoVista.Diaria;
+    private DateTime fechaReferencia = DateTime.Today;
     private string mensaje = "";
 
-    protected override async Task OnInitializedAsync() // Se ejecuta cuando se inicializa el componente
+    private string TituloPeriodo => modoVista switch
+    {
+        ModoVista.Diaria => fechaReferencia.ToString("dddd, dd 'de' MMMM 'de' yyyy"),
+        ModoVista.Semanal => $"{ObtenerInicioSemana(fechaReferencia):dd/MM/yyyy} al {ObtenerFinSemana(fechaReferencia):dd/MM/yyyy}",
+        ModoVista.Mensual => fechaReferencia.ToString("MMMM 'de' yyyy").ToUpperInvariant(),
+        ModoVista.Todos => "Todos los turnos",
+        _ => ""
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTurnos();
+    }
+
+    private async Task CargarTurnos()
     {
         try
         {
-            mensaje = await http.GetStringAsync("api/turno"); // Llamada al endpoint GET de la API para obtener los turnos
+            var resp = await http.GetAsync<List<TurnoListadoDTO>>("api/turno");
+
+            if (resp.Error)
+            {
+                if (resp.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    turnos = new List<TurnoListadoDTO>();
+                }
+                else
+                {
+                    mensaje = resp.Mensaje ?? "No se pudieron obtener los turnos.";
+                }
+            }
+            else
+            {
+                turnos = resp.Respuesta ?? new List<TurnoListadoDTO>();
+            }
         }
         catch (Exception ex)
         {
-            mensaje = $"Error:  {ex.Message}"; // Manejo de errores en caso de que la llamada falle
+            mensaje = $"Error: {ex.Message}";
         }
-
     }
+
+    private void CambiarModo(ModoVista nuevoModo)
+    {
+        modoVista = nuevoModo;
+    }
+
+    private void RetrocederPeriodo()
+    {
+        fechaReferencia = modoVista switch
+        {
+            ModoVista.Diaria => fechaReferencia.AddDays(-1),
+            ModoVista.Semanal => fechaReferencia.AddDays(-7),
+            ModoVista.Mensual => fechaReferencia.AddMonths(-1),
+            _ => fechaReferencia
+        };
+    }
+
+    private void AvanzarPeriodo()
+    {
+        fechaReferencia = modoVista switch
+        {
+            ModoVista.Diaria => fechaReferencia.AddDays(1),
+            ModoVista.Semanal => fechaReferencia.AddDays(7),
+            ModoVista.Mensual => fechaReferencia.AddMonths(1),
+            _ => fechaReferencia
+        };
+    }
+
+    private void IrAHoy()
+    {
+        fechaReferencia = DateTime.Today;
+    }
+
+    private void OnFechaCambiada(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var nuevaFecha))
+        {
+            fechaReferencia = nuevaFecha;
+        }
+    }
+
+    private List<TurnoListadoDTO> ObtenerTurnosFiltrados()
+    {
+        if (turnos == null) return new List<TurnoListadoDTO>();
+
+        return modoVista switch
+        {
+            ModoVista.Diaria => turnos.Where(t => t.Fecha.Date == fechaReferencia.Date).OrderBy(t => t.Hora).ToList(),
+            ModoVista.Semanal => turnos.Where(t => t.Fecha.Date >= ObtenerInicioSemana(fechaReferencia).Date && t.Fecha.Date <= ObtenerFinSemana(fechaReferencia).Date).OrderBy(t => t.Fecha).ThenBy(t => t.Hora).ToList(),
+            ModoVista.Mensual => turnos.Where(t => t.Fecha.Year == fechaReferencia.Year && t.Fecha.Month == fechaReferencia.Month).OrderBy(t => t.Fecha).ThenBy(t => t.Hora).ToList(),
+            ModoVista.Todos => turnos.OrderByDescending(t => t.Fecha).ThenBy(t => t.Hora).ToList(),
+            _ => turnos
+        };
+    }
+
+    private static DateTime ObtenerInicioSemana(DateTime fecha)
+    {
+        int diff = (7 + (fecha.DayOfWeek - DayOfWeek.Monday)) % 7;
+        return fecha.AddDays(-1 * diff).Date;
+    }
+
+    private static DateTime ObtenerFinSemana(DateTime fecha)
+    {
+        return ObtenerInicioSemana(fecha).AddDays(6).Date;
+    }
+
+    private static string ObtenerClaseBadge(string estado) => estado switch
+    {
+        "Turno confirmado" => "badge-stitch-success",
+        "Turno a confirmar" => "badge-stitch-warning",
+        "Cancelado" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
 }

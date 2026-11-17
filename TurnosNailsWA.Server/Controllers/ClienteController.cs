@@ -7,7 +7,6 @@ namespace TurnosNailsWA.Server.Controllers
 {
     [ApiController]
     [Route("api/cliente")]
-
     public class ClienteController : ControllerBase
     {
         private readonly IClienteRepositorio repositorio;
@@ -51,10 +50,15 @@ namespace TurnosNailsWA.Server.Controllers
         [HttpGet("telefono/{telefono}")] // api/cliente/telefono/3515548895
         public async Task<ActionResult<ClienteDTO>> GetByTelefono(string telefono)
         {
-            var entidad = await repositorio.SelectByTelefono(NormalizarTelefono(telefono));
+            if (!TelefonoHelper.ValidarYNormalizar(telefono, out var normalizado, out var error))
+            {
+                return BadRequest(error);
+            }
+
+            var entidad = await repositorio.SelectByTelefono(normalizado);
             if (entidad is null)
             {
-                return NotFound($"No existe una clienta con el teléfono: {telefono}.");
+                return NotFound($"No existe una clienta con el teléfono: {normalizado}.");
             }
             ClienteDTO DTO = new ClienteDTO();
             DTO.Id = entidad.Id;
@@ -67,19 +71,29 @@ namespace TurnosNailsWA.Server.Controllers
         [HttpPost] // api/cliente
         public async Task<ActionResult<int>> Post(ClienteDTO DTO)
         {
-            var telefono = NormalizarTelefono(DTO.Telefono);
-            if (string.IsNullOrWhiteSpace(telefono))
+            if (string.IsNullOrWhiteSpace(DTO.Nombre))
             {
-                return BadRequest("El teléfono es obligatorio.");
+                return BadRequest("El nombre es obligatorio.");
             }
+            if (string.IsNullOrWhiteSpace(DTO.Apellido))
+            {
+                return BadRequest("El apellido es obligatorio.");
+            }
+
+            if (!TelefonoHelper.ValidarYNormalizar(DTO.Telefono, out var telefono, out var error))
+            {
+                return BadRequest(error);
+            }
+
             var existente = await repositorio.SelectByTelefono(telefono);
             if (existente is not null)
             {
                 return BadRequest("Ya existe una clienta con ese teléfono.");
             }
+
             ClienteEntity entidad = new ClienteEntity();
-            entidad.Nombre = DTO.Nombre;
-            entidad.Apellido = DTO.Apellido;
+            entidad.Nombre = DTO.Nombre.Trim();
+            entidad.Apellido = DTO.Apellido.Trim();
             entidad.Telefono = telefono;
             await repositorio.Insert(entidad);
             return Ok(entidad.Id);
@@ -93,10 +107,18 @@ namespace TurnosNailsWA.Server.Controllers
                 return BadRequest("Datos incorrectos, no se actualizó.");
             }
 
-            var telefono = NormalizarTelefono(DTO.Telefono);
-            if (string.IsNullOrWhiteSpace(telefono))
+            if (string.IsNullOrWhiteSpace(DTO.Nombre))
             {
-                return BadRequest("El teléfono es obligatorio.");
+                return BadRequest("El nombre es obligatorio.");
+            }
+            if (string.IsNullOrWhiteSpace(DTO.Apellido))
+            {
+                return BadRequest("El apellido es obligatorio.");
+            }
+
+            if (!TelefonoHelper.ValidarYNormalizar(DTO.Telefono, out var telefono, out var error))
+            {
+                return BadRequest(error);
             }
 
             var existente = await repositorio.SelectByTelefono(telefono);
@@ -107,27 +129,13 @@ namespace TurnosNailsWA.Server.Controllers
 
             ClienteEntity entidad = new ClienteEntity();
             entidad.Id = DTO.Id;
-            entidad.Nombre = DTO.Nombre;
-            entidad.Apellido = DTO.Apellido;
+            entidad.Nombre = DTO.Nombre.Trim();
+            entidad.Apellido = DTO.Apellido.Trim();
             entidad.Telefono = telefono;
 
             var resultado = await repositorio.Update(entidad);
 
             return Ok(resultado);
-        }
-
-        private static string NormalizarTelefono(string telefono)
-        {
-            if (string.IsNullOrWhiteSpace(telefono))
-            {
-                return "";
-            }
-            return telefono
-                    .Replace(" ", "")
-                    .Replace("-", "")
-                    .Replace("(", "")
-                    .Replace(")", "")
-                    .Replace(".", "");
         }
     }
 }

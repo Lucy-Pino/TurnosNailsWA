@@ -30,6 +30,9 @@ namespace TurnosNailsWA.Repositorio.Repositorios
                             Hora = t.Hora,
                             Estado = t.Estado,
                             ServicioNombre = t.Servicio.Nombre,
+                            Categoria = t.Servicio.Categoria,
+                            Duracion = t.Servicio.Duracion,
+                            Precio = t.Servicio.Precio,
                             CodigoReserva = t.Reserva.CodigoReserva,
                             ClienteNombre = t.Reserva.Cliente.Nombre + " " + t.Reserva.Cliente.Apellido
                         })
@@ -51,6 +54,9 @@ namespace TurnosNailsWA.Repositorio.Repositorios
                             Hora = t.Hora,
                             Estado = t.Estado,
                             ServicioNombre = t.Servicio.Nombre,
+                            Categoria = t.Servicio.Categoria,
+                            Duracion = t.Servicio.Duracion,
+                            Precio = t.Servicio.Precio,
                             CodigoReserva = t.Reserva.CodigoReserva,
                             ClienteNombre = t.Reserva.Cliente.Nombre + " " + t.Reserva.Cliente.Apellido
                         })

@@ -1,61 +1,84 @@
 @page "/servicios"
+@attribute [Authorize]
 @using TurnosNailsWA.Shared.DTO
 @using TurnosNailsWA.Servicio.ServicioHTTP
 @inject IHttpService http
 
-<h3>Lista de Servicios</h3>
+<PageTitle>Catálogo de Servicios • Eli Beauty Care</PageTitle>
 
-<br />
-<a class="btn btn-primary" href="/servicios/crear">Crear Servicio</a>
-<br />
-@if (guardado == true)
-{
-    <p class="text-success">El servicio se guardó correctamente.</p>
-}
-<table class="table">
-    <tr>
-        <th>Categoría</th>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th>Duración</th>
-        <th>Precio</th>
-        <th></th>
-    </tr>
+<div class="container py-4">
+    <!-- Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill text-uppercase small" style="background-color: var(--color-secondary-container); color: var(--color-primary); font-size: 0.72rem;">Consola Operativa</span>
+                <span class="text-muted small">•</span>
+                <span class="text-muted small">Catálogo del Atelier</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Catálogo de Servicios</h1>
+            <p class="text-muted small mb-0">Servicios vigentes de manicura y pedicura, tiempos de sesión y tarifas del salón.</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="alert alert-info py-2 px-3 small mb-4">@mensaje</div>
+    }
+
     @if (servicios == null)
     {
-        <p>Buscando ....</p>
+        <div class="d-flex align-items-center justify-content-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Cargando catálogo de servicios...</span>
+        </div>
     }
     else if (servicios.Count == 0)
     {
-        <p>No existen servicios cargados en esta lista</p>
+        <div class="card card-stitch p-4 text-center text-muted">
+            No existen servicios registrados en el sistema.
+        </div>
     }
     else
     {
-        @foreach (var servicio in servicios)
-        {
-            <tr>
-                <td>@servicio.Categoria</td>
-                <td>@servicio.Nombre</td>
-                <td>@servicio.Descripcion</td>
-                <td>@servicio.Duracion min</td>
-                <td>@servicio.Precio.ToString("0.00")</td>
-                <td>
-                    <a class="btn btn-primary" href="/servicios/editar/@servicio.Id">Actualizar</a>
-                </td>
-            </tr>
-        }
+        <div class="card card-stitch p-0 overflow-hidden mb-4 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-stitch mb-0">
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Servicio</th>
+                            <th>Descripción</th>
+                            <th class="text-center">Duración</th>
+                            <th class="text-end">Precio Vigente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var servicio in servicios)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge rounded-pill text-uppercase px-2.5 py-1" style="font-size: 0.7rem; background-color: @(servicio.Categoria.Equals("Manos", StringComparison.OrdinalIgnoreCase) ? "var(--color-secondary-container)" : "#eae8e4"); color: var(--color-primary);">
+                                        @servicio.Categoria
+                                    </span>
+                                </td>
+                                <td class="fw-bold text-dark">@servicio.Categoria.ToUpper() – @servicio.Nombre</td>
+                                <td class="text-muted small" style="max-width: 320px;">@servicio.Descripcion</td>
+                                <td class="text-center">
+                                    <span class="badge badge-stitch-surface">@servicio.Duracion min</span>
+                                </td>
+                                <td class="text-end fw-bold text-primary fs-6">$ @servicio.Precio.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
-</table>
-<br />
-<p>@mensaje</p>
-<br />
+</div>
 
 @code {
-    List<ServicioListadoDTO>? servicios;
+    private List<ServicioListadoDTO>? servicios;
     private string mensaje = "";
-
-    [SupplyParameterFromQuery(Name = "guardado")]
-    public bool? guardado { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,14 +93,13 @@
 
             if (resp.Error)
             {
-                // El endpoint devuelve 404 cuando la lista está vacía: se toma como lista sin registros.
                 if (resp.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     servicios = new List<ServicioListadoDTO>();
                 }
                 else
                 {
-                    mensaje = resp.Mensaje ?? "";
+                    mensaje = resp.Mensaje ?? "No se pudieron obtener los servicios.";
                 }
             }
             else

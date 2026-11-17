@@ -1,0 +1,430 @@
+/* ========================================================
+   RESERVAR.RAZOR.CSS - SCOPED STYLES (ELI BEAUTY CARE ATELIER)
+   ======================================================== */
+
+/* ---------------- STEPPER DE 4 PASOS ---------------- */
+.stitch-stepper-container {
+    background: #ffffff;
+    border: 1px solid #eae8e4;
+    border-radius: 20px;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(126, 83, 86, 0.04);
+}
+
+.stitch-stepper-list {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.stitch-step-item {
+    display: flex;
+    align-items: center;
+}
+
+.step-circle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.step-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+
+/* Active Step */
+.stitch-step-item.active .step-circle {
+    background-color: #7e5356;
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(126, 83, 86, 0.35);
+    border: 2px solid #7e5356;
+}
+
+.stitch-step-item.active .step-title {
+    color: #7e5356;
+    font-weight: 700;
+}
+
+/* Completed Step */
+.stitch-step-item.completed .step-circle {
+    background-color: #c99598;
+    color: #ffffff;
+    border: 2px solid #c99598;
+}
+
+.stitch-step-item.completed .step-title {
+    color: #514444;
+    font-weight: 600;
+}
+
+.step-check-icon {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+/* Pending Step */
+.stitch-step-item.pending .step-circle {
+    background-color: #f0ede9;
+    color: #837374;
+    border: 2px solid #e5e2de;
+}
+
+.stitch-step-item.pending .step-title {
+    color: #837374;
+}
+
+/* Connecting Line */
+.stitch-step-line {
+    flex: 1;
+    height: 3px;
+    background-color: #e5e2de;
+    margin: 0 1rem;
+    border-radius: 9999px;
+    transition: background-color 0.3s ease;
+}
+
+.stitch-step-line.filled {
+    background-color: #7e5356;
+}
+
+@media (max-width: 768px) {
+    .stitch-stepper-container {
+        padding: 0.85rem 1rem;
+    }
+    .step-title {
+        display: none;
+    }
+    .stitch-step-line {
+        margin: 0 0.4rem;
+    }
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ---------------- FILTROS DE CATEGORÍA PILL ---------------- */
+.stitch-filter-group {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f0ede9;
+    border-radius: 9999px;
+    padding: 4px;
+    gap: 4px;
+    border: 1px solid #e5e2de;
+}
+
+.stitch-pill-btn {
+    border: none;
+    outline: none;
+    background: transparent;
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #514444;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.stitch-pill-btn:hover {
+    color: #1c1c1a;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.stitch-pill-btn.active {
+    background-color: #7e5356;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.25);
+}
+
+.stitch-pill-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background-color: #e5e2de;
+    color: #514444;
+    transition: all 0.2s ease;
+}
+
+.stitch-pill-btn.active .stitch-pill-badge {
+    background-color: #c99598;
+    color: #532e31;
+}
+
+/* ---------------- TARJETAS DE SERVICIOS STITCH ---------------- */
+.service-card-stitch {
+    position: relative;
+    background: #ffffff;
+    border: 1.5px solid #eae8e4;
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.04);
+}
+
+.service-card-stitch:hover {
+    border-color: #c99598;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(126, 83, 86, 0.08);
+}
+
+.service-card-stitch.is-selected {
+    border-color: #7e5356;
+    background: #fdfaf8;
+    box-shadow: 0 6px 20px rgba(126, 83, 86, 0.12);
+}
+
+.service-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.category-manos {
+    background-color: #fdcedd;
+    color: #785461;
+}
+
+.category-pies {
+    background-color: #eae8e4;
+    color: #514444;
+}
+
+.selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #7e5356;
+}
+
+.selected-pill .check-icon {
+    font-size: 16px;
+    color: #7e5356;
+    font-variation-settings: 'FILL' 1;
+}
+
+.service-card-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1c1c1a;
+    margin-bottom: 0.4rem;
+    line-height: 1.35;
+}
+
+.service-card-stitch.is-selected .service-card-title {
+    color: #7e5356;
+}
+
+.service-card-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #514444;
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.service-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid #f0ede9;
+}
+
+.service-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.duration-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: #514444;
+    background-color: #f6f3ef;
+    padding: 3px 9px;
+    border-radius: 9999px;
+}
+
+.clock-icon {
+    font-size: 15px;
+}
+
+.service-price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #7e5356;
+    letter-spacing: -0.01em;
+}
+
+.btn-select-stitch {
+    width: 100%;
+    border: 1.5px solid #7e5356;
+    background: transparent;
+    color: #7e5356;
+    padding: 7px 14px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-select-stitch:hover {
+    background: #7e5356;
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(126, 83, 86, 0.25);
+}
+
+.service-selected-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0ede9;
+    padding: 4px 8px 4px 12px;
+    border-radius: 12px;
+    border: 1px solid #d5c2c2;
+}
+
+.selected-count-label {
+    font-size: 0.8rem;
+    color: #514444;
+}
+
+.selected-count-label strong {
+    color: #7e5356;
+    font-size: 0.95rem;
+}
+
+.counter-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.counter-btn {
+    border: none;
+    outline: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.counter-minus {
+    background: #ffffff;
+    color: #ba1a1a;
+    border: 1px solid #ffdad6;
+}
+
+.counter-minus:hover {
+    background: #ba1a1a;
+    color: #ffffff;
+}
+
+.counter-plus {
+    background: #7e5356;
+    color: #ffffff;
+}
+
+.counter-plus:hover {
+    background: #674144;
+}
+
+.counter-btn .material-symbols-outlined {
+    font-size: 16px;
+}
+
+.counter-value {
+    min-width: 22px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #1c1c1a;
+}
+
+/* ---------------- HORARIOS / SLOTS (PASO 2) ---------------- */
+.slot-pill {
+    padding: 0.5rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid #d5c2c2 !important;
+    background-color: #ffffff !important;
+    color: #1c1c1a !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    outline: none !important;
+}
+
+.slot-pill:hover {
+    border-color: #7e5356 !important;
+    background-color: #f6f3ef !important;
+    color: #7e5356 !important;
+}
+
+.slot-pill.active {
+    background-color: #7e5356 !important;
+    border-color: #7e5356 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.3);
+}

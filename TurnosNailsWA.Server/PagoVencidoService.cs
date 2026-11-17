@@ -23,7 +23,7 @@ namespace TurnosNailsWA.Server
 
             try
             {
-                while (await temporizador.WaitForNextTickAsync(stoppingToken))
+                do
                 {
                     try
                     {
@@ -32,7 +32,7 @@ namespace TurnosNailsWA.Server
                         var actualizados = await pagoRepositorio.ActualizarVencidos(MinutosVencimiento);
                         if (actualizados > 0)
                         {
-                            logger.LogInformation("Pagos vencidos marcados como 'Pendiente de aclaración': {Cantidad}.", actualizados);
+                            logger.LogInformation("Pagos procesados y actualizados por el servicio de vencimiento: {Cantidad}.", actualizados);
                         }
                     }
                     catch (Exception ex)
@@ -41,6 +41,7 @@ namespace TurnosNailsWA.Server
                         logger.LogError(ex, "Error al actualizar los pagos vencidos.");
                     }
                 }
+                while (await temporizador.WaitForNextTickAsync(stoppingToken));
             }
             catch (OperationCanceledException)
             {

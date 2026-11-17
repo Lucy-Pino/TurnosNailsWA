@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Transactions;
 using TurnosNailsWA.BD.Datos.Entity;
 using TurnosNailsWA.Repositorio.Repositorios;
 using TurnosNailsWA.Shared.DTO;
@@ -38,6 +40,7 @@ namespace TurnosNailsWA.Server.Controllers
             carpetaComprobantes = Path.Combine(entorno.ContentRootPath, "Comprobantes");
         }
 
+        [Authorize]
         [HttpGet] // api/reserva
         public async Task<ActionResult<List<ReservaListadoDTO>>> Get()
         {
@@ -49,6 +52,7 @@ namespace TurnosNailsWA.Server.Controllers
             return Ok(lista);
         }
 
+        [Authorize]
         [HttpGet("{id:int}")] // api/reserva/5
         public async Task<ActionResult<ReservaDetalleDTO>> GetById(int id)
         {
@@ -177,6 +181,7 @@ namespace TurnosNailsWA.Server.Controllers
             return Ok(await ArmarDetalle(reserva));
         }
 
+        [Authorize]
         [HttpPut("{id:int}/confirmar")] // api/reserva/5/confirmar
         public async Task<ActionResult<bool>> Confirmar(int id)
         {
@@ -196,7 +201,27 @@ namespace TurnosNailsWA.Server.Controllers
                 return BadRequest("La reserva ya está confirmada.");
             }
 
+            var pago = await pagoRepositorio.SelectByReserva(id);
+            if (pago is null)
+            {
+                return NotFound($"No existe un pago registrado para la reserva con id: {id}.");
+            }
+
+            if (pago.Estado == "Cancelado")
+            {
+                return BadRequest("No se puede confirmar una reserva cuyo pago está cancelado.");
+            }
+
             var turnos = await turnoRepositorio.ListaTurnoPorReserva(id);
+
+            using var transaccion = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
+            if (pago.Estado != "Acreditado")
+            {
+                pago.Estado = "Acreditado";
+                await pagoRepositorio.Update(pago);
+            }
+
             foreach (var turnoDTO in turnos)
             {
                 if (turnoDTO.Estado != "Turno a confirmar")
@@ -214,11 +239,13 @@ namespace TurnosNailsWA.Server.Controllers
 
             reserva.Estado = "Reserva Confirmada";
             await reservaRepositorio.Update(reserva);
+
+            transaccion.Complete();
             return Ok(true);
         }
 
-        [HttpPut("{id:int}/cancelar")] // api/reserva/5/cancelar
-        public async Task<ActionResult<bool>> Cancelar(int id)
+        [HttpPut("{id:int}/cancelar")] // api/reserva/5/cancelar (cancelación completa solicitada por la clienta)
+        public async Task<ActionResult<bool>> Cancelar(int id, [FromHeader(Name = "X-Codigo-Reserva")] string? codigoReserva)
         {
             var reserva = await reservaRepositorio.SelectById(id);
             if (reserva is null)
@@ -226,27 +253,47 @@ namespace TurnosNailsWA.Server.Controllers
                 return NotFound($"No existe el registro con id: {id}.");
             }
 
+            if (string.IsNullOrWhiteSpace(codigoReserva) ||
+                !string.Equals(reserva.CodigoReserva, codigoReserva.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("El código de reserva es inválido o no coincide con la reserva.");
+            }
+
             if (reserva.Estado == "Cancelada")
             {
                 return BadRequest("La reserva ya está cancelada.");
             }
 
-            var pago = await pagoRepositorio.SelectByReserva(id);
-            if (pago is not null && pago.Estado != "Cancelado")
+            // La clienta solo puede cancelar una reserva confirmada; mientras está pendiente,
+            // la cancelación es una decisión administrativa.
+            if (reserva.Estado != "Reserva Confirmada")
             {
-                pago.Estado = "Cancelado";
-                await pagoRepositorio.Update(pago);
+                return BadRequest("La reserva todavía no está confirmada.");
             }
 
             var ahora = DateTime.Now;
             var turnos = await turnoRepositorio.ListaTurnoPorReserva(id);
+
+            // La reserva completa solo puede cancelarse antes del horario del primer turno activo.
+            var primerTurno = turnos
+                .Where(t => t.Estado != "Cancelado")
+                .OrderBy(t => t.Fecha.Date + t.Hora)
+                .FirstOrDefault();
+
+            if (primerTurno is null)
+            {
+                return BadRequest("La reserva no tiene turnos para cancelar.");
+            }
+
+            if (primerTurno.Fecha.Date + primerTurno.Hora <= ahora)
+            {
+                return BadRequest("Solo se puede cancelar la reserva antes del horario del primer turno.");
+            }
+
+            // Si el primer turno todavía no comenzó, ningún turno de la reserva comenzó.
             foreach (var turnoDTO in turnos)
             {
                 if (turnoDTO.Estado == "Cancelado")
-                {
-                    continue;
-                }
-                if (turnoDTO.Fecha.Date + turnoDTO.Hora <= ahora)
                 {
                     continue;
                 }
@@ -261,6 +308,78 @@ namespace TurnosNailsWA.Server.Controllers
 
             reserva.Estado = "Cancelada";
             await reservaRepositorio.Update(reserva);
+
+            // El pago acreditado se conserva como historial: no se devuelve el adelanto.
+            return Ok(true);
+        }
+
+        [Authorize]
+        [HttpPut("{id:int}/cancelar-administrativa")] // api/reserva/5/cancelar-administrativa
+        public async Task<ActionResult<bool>> CancelarAdministrativa(int id)
+        {
+            var reserva = await reservaRepositorio.SelectById(id);
+            if (reserva is null)
+            {
+                return NotFound($"No existe el registro con id: {id}.");
+            }
+
+            if (reserva.Estado == "Cancelada")
+            {
+                return BadRequest("La reserva ya está cancelada.");
+            }
+
+            if (reserva.Estado == "Reserva Confirmada")
+            {
+                return BadRequest("La reserva ya fue confirmada; solo la clienta puede cancelarla.");
+            }
+
+            if (reserva.Estado != "Pendiente de verificación")
+            {
+                return BadRequest("Solo se pueden cancelar administrativamente reservas pendientes.");
+            }
+
+            var pago = await pagoRepositorio.SelectByReserva(id);
+            if (pago is null)
+            {
+                return NotFound($"No existe un pago registrado para la reserva con id: {id}.");
+            }
+
+            if (pago.Estado == "Acreditado")
+            {
+                return BadRequest("La reserva ya fue confirmada; solo la clienta puede cancelarla.");
+            }
+
+            if (pago.Estado == "Cancelado")
+            {
+                return BadRequest("El pago de la reserva ya está cancelado.");
+            }
+
+            var turnos = await turnoRepositorio.ListaTurnoPorReserva(id);
+
+            using var transaccion = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
+            foreach (var turnoDTO in turnos)
+            {
+                if (turnoDTO.Estado == "Cancelado")
+                {
+                    continue;
+                }
+                var turno = await turnoRepositorio.SelectById(turnoDTO.Id);
+                if (turno is null)
+                {
+                    return NotFound($"No se encontró el turno con id: {turnoDTO.Id}.");
+                }
+                turno.Estado = "Cancelado";
+                await turnoRepositorio.Update(turno);
+            }
+
+            pago.Estado = "Cancelado";
+            await pagoRepositorio.Update(pago);
+
+            reserva.Estado = "Cancelada";
+            await reservaRepositorio.Update(reserva);
+
+            transaccion.Complete();
             return Ok(true);
         }
 
@@ -303,7 +422,42 @@ namespace TurnosNailsWA.Server.Controllers
                 };
             }
 
-            detalle.Turnos = await turnoRepositorio.ListaTurnoPorReserva(reserva.Id);
+            var turnos = await turnoRepositorio.ListaTurnoPorReserva(reserva.Id);
+            detalle.Turnos = turnos;
+
+            // Liquidación económica de cancelaciones y cálculo de saldo pendiente
+            decimal totalOriginal = reserva.ImporteTotal > 0 ? reserva.ImporteTotal : turnos.Sum(t => t.Precio);
+            decimal seniaTransferida = detalle.Pago?.Monto ?? Math.Round(totalOriginal * PorcentajeSenia, 2);
+
+            var turnosCancelados = turnos.Where(t => t.Estado == "Cancelado").ToList();
+            var turnosActivos = turnos.Where(t => t.Estado != "Cancelado").ToList();
+
+            decimal totalCancelados = turnosCancelados.Sum(t => t.Precio);
+            decimal seniaRetenidaCancelados = Math.Round(totalCancelados * PorcentajeSenia, 2);
+            decimal restanteDescontadoCancelados = totalCancelados - seniaRetenidaCancelados;
+
+            decimal totalActivos = turnosActivos.Sum(t => t.Precio);
+            decimal seniaActivos = Math.Round(totalActivos * PorcentajeSenia, 2);
+            decimal restanteActivos = totalActivos - seniaActivos;
+
+            decimal saldoPendiente = (reserva.Estado == "Cancelada" || turnosActivos.Count == 0) ? 0m : restanteActivos;
+
+            detalle.Liquidacion = new ReservaLiquidacionDTO
+            {
+                TotalOriginal = totalOriginal,
+                SeniaTransferida = seniaTransferida,
+                TotalCancelados = totalCancelados,
+                SeniaRetenidaCancelados = seniaRetenidaCancelados,
+                RestanteDescontadoCancelados = restanteDescontadoCancelados,
+                TotalActivos = totalActivos,
+                SeniaActivos = seniaActivos,
+                RestanteActivos = restanteActivos,
+                SaldoPendiente = saldoPendiente,
+                CantidadTurnosOriginales = turnos.Count,
+                CantidadTurnosCancelados = turnosCancelados.Count,
+                CantidadTurnosActivos = turnosActivos.Count
+            };
+
             return detalle;
         }
 

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using TurnosNailsWA.BD.Datos;
 using TurnosNailsWA.Repositorio;
@@ -13,6 +14,29 @@ var builder = WebApplication.CreateBuilder(args);
 
      builder.Services.AddDbContext<AppDbContext>(options =>
           options.UseSqlServer(connectionString)); //Conexion a la base de datos
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "EliBeautyCare.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllersWithViews(); //Maneja controllers 
 builder.Services.AddRazorPages();
@@ -47,6 +71,9 @@ app.UseHttpsRedirection();
    app.UseStaticFiles();
 
    app.UseRouting();
+
+   app.UseAuthentication();
+   app.UseAuthorization();
 
    app.MapRazorPages();
    app.MapControllers();

@@ -1,0 +1,619 @@
+@page "/reservas"
+@attribute [Authorize]
+@using TurnosNailsWA.Shared.DTO
+@using TurnosNailsWA.Servicio.ServicioHTTP
+@inject IHttpService httpService
+@inject HttpClient httpClient
+
+<PageTitle>Gestión de Reservas • Eli Beauty Care</PageTitle>
+
+<div class="container py-4">
+    <!-- Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill text-uppercase small" style="background-color: var(--color-secondary-container); color: var(--color-primary); font-size: 0.72rem;">Consola Operativa</span>
+                <span class="text-muted small">•</span>
+                <span class="text-muted small">Atelier de Eli Gómez</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1" style="font-family: 'Playfair Display', serif;">Gestión de Reservas</h1>
+            <p class="text-muted small mb-0">Consulta de solicitudes recibidas, comprobación de pagos bancarios y confirmación de turnos.</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensajeAlerta))
+    {
+        <div class="alert @claseAlerta alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <span class="material-symbols-outlined fs-5">info</span>
+                <div>@mensajeAlerta</div>
+            </div>
+            <button type="button" class="btn-close" @onclick="() => mensajeAlerta = null"></button>
+        </div>
+    }
+
+    <!-- Panel de Detalle de Reserva Seleccionada (Stitch Screen 10 & 11) -->
+    @if (detalle != null)
+    {
+        <div class="card card-stitch p-4 mb-4 shadow-sm position-relative overflow-hidden" style="background: linear-gradient(135deg, #ffffff 0%, #fcf9f5 100%);">
+            <div class="position-absolute top-0 start-0 end-0" style="height: 4px; background: linear-gradient(90deg, var(--color-primary), var(--color-primary-container));"></div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pb-3 mb-4 border-bottom">
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold small d-block mb-1" style="font-size: 0.72rem;">Detalle de la Solicitud</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <h3 class="h4 fw-bold text-primary font-monospace mb-0">@detalle.CodigoReserva</h3>
+                        <span class="badge @ObtenerClaseBadgeReserva(detalle.Estado)">@detalle.Estado</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-stitch-secondary btn-sm d-inline-flex align-items-center gap-1" @onclick="CerrarDetalle">
+                    <span class="material-symbols-outlined fs-6">close</span>
+                    <span>Cerrar Detalle</span>
+                </button>
+            </div>
+
+            <!-- Client & Economic Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="p-3 rounded-3 h-100" style="background-color: var(--color-surface-container-low);">
+                        <small class="text-uppercase text-muted fw-semibold d-block mb-1" style="font-size: 0.7rem;">Clienta</small>
+                        <h6 class="fw-bold mb-1 text-dark">@detalle.Cliente.Nombre @detalle.Cliente.Apellido</h6>
+                        <small class="text-muted d-block mb-1">Teléfono: @detalle.Cliente.Telefono</small>
+                        <small class="text-muted">Fecha: @detalle.FechaCreacion.ToString("dd/MM/yyyy HH:mm") hs</small>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="p-3 rounded-3 h-100" style="background-color: var(--color-surface-container-low);">
+                        <small class="text-uppercase text-muted fw-semibold d-block mb-1" style="font-size: 0.7rem;">Importe &amp; Seña (30%)</small>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">Total original:</span>
+                            <span class="fw-bold text-dark">$ @detalle.ImporteTotal.ToString("N2")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-primary fw-semibold">Seña (30%):</span>
+                            <span class="fw-bold text-primary">$ @((detalle.ImporteTotal * 0.30m).ToString("N2"))</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-1 border-top">
+                            <span class="small text-muted">Saldo en salón:</span>
+                            <span class="fw-bold text-dark">$ @((detalle.ImporteTotal * 0.70m).ToString("N2"))</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="p-3 rounded-3 h-100" style="background-color: var(--color-surface-container-low);">
+                        <small class="text-uppercase text-muted fw-semibold d-block mb-1" style="font-size: 0.7rem;">Pago y Comprobante</small>
+                        @if (detalle.Pago != null)
+                        {
+                            <div class="mb-2">
+                                <span class="badge @ObtenerClaseBadgePago(detalle.Pago.Estado)">
+                                    Pago: @detalle.Pago.Estado
+                                </span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(detalle.Pago.Comprobante))
+                            {
+                                <a href="api/pago/@detalle.Pago.Id/comprobante" target="_blank"
+                                   class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                                    <span class="material-symbols-outlined fs-6">receipt_long</span>
+                                    <span>Ver Comprobante</span>
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Sin comprobante registrado</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liquidación de Cancelaciones si existen -->
+            @if (detalle.Liquidacion != null && detalle.Liquidacion.TieneCancelaciones)
+            {
+                <div class="card p-3 mb-4 border" style="background-color: var(--color-surface-container-low); border-radius: 12px;">
+                    <h6 class="fw-bold text-primary mb-2 d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined fs-5">receipt</span>
+                        Liquidación de Cancelaciones y Saldo en Salón
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-md-4">
+                            <strong>Total original:</strong> $ @detalle.Liquidacion.TotalOriginal.ToString("N2")
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Seña transferida (30%):</strong> $ @detalle.Liquidacion.SeniaTransferida.ToString("N2")
+                        </div>
+                        <div class="col-md-4 text-danger">
+                            <strong>Servicios cancelados:</strong> $ @detalle.Liquidacion.TotalCancelados.ToString("N2")
+                        </div>
+                        <div class="col-md-4 text-muted">
+                            <strong>Seña retenida (30%):</strong> $ @detalle.Liquidacion.SeniaRetenidaCancelados.ToString("N2")
+                        </div>
+                        <div class="col-md-4 text-success">
+                            <strong>Servicios activos:</strong> $ @detalle.Liquidacion.TotalActivos.ToString("N2")
+                        </div>
+                        <div class="col-md-4">
+                            <strong class="text-dark fs-6">Saldo pendiente en salón: $ @detalle.Liquidacion.SaldoPendiente.ToString("N2")</strong>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Servicios incluidos -->
+            <h6 class="fw-bold text-dark mb-2">Servicios incluidos en la reserva</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-stitch mb-0">
+                    <thead>
+                        <tr>
+                            <th>Servicio</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th class="text-center">Estado del turno</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var turno in detalle.Turnos)
+                        {
+                            <tr class="@(turno.Estado == "Cancelado" ? "text-muted" : "")">
+                                <td class="fw-bold text-dark">@turno.ServicioCompleto</td>
+                                <td>@turno.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td>@turno.Hora.ToString(@"hh\:mm") hs</td>
+                                <td class="text-center">
+                                    <span class="badge @ObtenerClaseBadgeTurno(turno.Estado)">
+                                        @turno.Estado
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Diálogo de confirmación de acción -->
+            @if (accionPendiente != null)
+            {
+                <div class="alert @(accionPendiente == "confirmar" ? "alert-success" : "alert-warning") border mb-3">
+                    <h6 class="fw-bold mb-1">
+                        @(accionPendiente == "confirmar" ? "¿Confirmar esta reserva?" : "¿Cancelar esta reserva?")
+                    </h6>
+                    <p class="small mb-3">
+                        @if (accionPendiente == "confirmar")
+                        {
+                            <span>Al confirmar: la reserva pasa a <strong>Reserva Confirmada</strong>, el pago se marca como <strong>Acreditado</strong> y todos los turnos pasan a <strong>Turno confirmado</strong>.</span>
+                        }
+                        else
+                        {
+                            <span>Al cancelar: la reserva pasa a <strong>Cancelada</strong>, el pago a <strong>Cancelado</strong> y todos los turnos asociados se cancelan.</span>
+                        }
+                    </p>
+                    <div class="d-flex gap-2">
+                        @if (accionPendiente == "confirmar")
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="EjecutarConfirmacion" disabled="@procesandoAccion">
+                                @(procesandoAccion ? "Procesando..." : "Sí, confirmar reserva")
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-danger btn-sm" @onclick="EjecutarCancelacion" disabled="@procesandoAccion">
+                                @(procesandoAccion ? "Procesando..." : "Sí, cancelar reserva")
+                            </button>
+                        }
+                        <button class="btn btn-stitch-secondary btn-sm" @onclick="() => accionPendiente = null" disabled="@procesandoAccion">
+                            Cancelar acción
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <!-- Barra de Acciones Disponibles -->
+            <div class="d-flex flex-wrap gap-2 align-items-center pt-3 border-top">
+                @if (PuedeConfirmar(detalle))
+                {
+                    <button class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm" @onclick='() => accionPendiente = "confirmar"' disabled="@procesandoAccion">
+                        <span class="material-symbols-outlined fs-6">check_circle</span>
+                        <span>Confirmar Reserva</span>
+                    </button>
+                }
+
+                @if (PuedeCancelar(detalle))
+                {
+                    <button class="btn btn-outline-danger d-inline-flex align-items-center gap-1" @onclick='() => accionPendiente = "cancelar"' disabled="@procesandoAccion">
+                        <span class="material-symbols-outlined fs-6">cancel</span>
+                        <span>Cancelar Reserva</span>
+                    </button>
+                }
+                else if (detalle.Estado == "Reserva Confirmada")
+                {
+                    <small class="text-muted fst-italic">
+                        * Una reserva confirmada no puede ser cancelada por la administradora. La cancelación corresponde exclusivamente a la clienta.
+                    </small>
+                }
+
+                <button class="btn btn-stitch-secondary ms-auto" @onclick="CerrarDetalle">
+                    Volver a la lista
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Listado General de Reservas -->
+    <div class="card card-stitch p-0 overflow-hidden mb-4 shadow-sm">
+        <div class="p-3 bg-light border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h5 class="mb-0 fw-bold text-dark fs-6">Listado de Reservas Recibidas</h5>
+            <!-- Filtro de estado -->
+            <div class="d-flex gap-1.5">
+                <button type="button" class="category-tab-btn @(filtroEstado == "Todas" ? "active" : "") py-1 px-3 small"
+                        @onclick='() => filtroEstado = "Todas"'>
+                    Todas
+                </button>
+                <button type="button" class="category-tab-btn @(filtroEstado == "Pendientes" ? "active" : "") py-1 px-3 small"
+                        @onclick='() => filtroEstado = "Pendientes"'>
+                    Pendientes
+                </button>
+                <button type="button" class="category-tab-btn @(filtroEstado == "Confirmadas" ? "active" : "") py-1 px-3 small"
+                        @onclick='() => filtroEstado = "Confirmadas"'>
+                    Confirmadas
+                </button>
+                <button type="button" class="category-tab-btn @(filtroEstado == "Canceladas" ? "active" : "") py-1 px-3 small"
+                        @onclick='() => filtroEstado = "Canceladas"'>
+                    Canceladas
+                </button>
+            </div>
+        </div>
+
+        <div class="p-0">
+            @if (reservas == null)
+            {
+                <div class="p-5 d-flex align-items-center justify-content-center">
+                    <div class="spinner-border text-primary me-3" role="status"></div>
+                    <span class="text-muted">Cargando reservas...</span>
+                </div>
+            }
+            else
+            {
+                var reservasFiltradas = ObtenerReservasFiltradas();
+
+                @if (reservasFiltradas.Count == 0)
+                {
+                    <div class="p-4 text-center text-muted">
+                        No hay reservas para mostrar con el filtro seleccionado (@filtroEstado).
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-stitch mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Fecha</th>
+                                    <th>Clienta</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Seña (30%)</th>
+                                    <th class="text-center">Estado Reserva</th>
+                                    <th class="text-center">Estado Pago</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in reservasFiltradas)
+                                {
+                                    var estadoPago = ObtenerEstadoPago(r.CodigoReserva);
+                                    <tr>
+                                        <td><code class="font-monospace text-dark fw-bold">@r.CodigoReserva</code></td>
+                                        <td>@r.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="fw-bold">@r.ClienteNombre</td>
+                                        <td class="text-end fw-bold text-dark">$ @r.ImporteTotal.ToString("N2")</td>
+                                        <td class="text-end text-primary fw-bold">$ @((r.ImporteTotal * 0.30m).ToString("N2"))</td>
+                                        <td class="text-center">
+                                            <span class="badge @ObtenerClaseBadgeReserva(r.Estado)">
+                                                @r.Estado
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge @ObtenerClaseBadgePago(estadoPago)">
+                                                @estadoPago
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-stitch-primary btn-sm py-1 px-2.5" @onclick="() => VerDetalle(r.Id)" disabled="@cargandoDetalle">
+                                                Ver Detalle
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ReservaListadoDTO>? reservas;
+    private Dictionary<string, string> estadosPago = new(StringComparer.OrdinalIgnoreCase);
+    private ReservaDetalleDTO? detalle;
+    private string filtroEstado = "Todas";
+    private string? mensajeAlerta;
+    private string claseAlerta = "alert-info";
+    private bool cargandoDetalle = false;
+    private bool procesandoAccion = false;
+    private string? accionPendiente = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarReservas();
+    }
+
+    private async Task CargarReservas()
+    {
+        try
+        {
+            var resp = await httpService.GetAsync<List<ReservaListadoDTO>>("api/reserva");
+            if (resp.Error)
+            {
+                if (resp.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    reservas = new List<ReservaListadoDTO>();
+                }
+                else
+                {
+                    MostrarAlerta(resp.Mensaje ?? "No se pudieron obtener las reservas.", "alert-danger");
+                }
+            }
+            else
+            {
+                reservas = resp.Respuesta ?? new List<ReservaListadoDTO>();
+            }
+
+            var respPagos = await httpService.GetAsync<List<PagoListadoDTO>>("api/pago");
+            estadosPago.Clear();
+            if (!respPagos.Error && respPagos.Respuesta != null)
+            {
+                foreach (var p in respPagos.Respuesta)
+                {
+                    if (!string.IsNullOrEmpty(p.CodigoReserva))
+                    {
+                        estadosPago[p.CodigoReserva] = p.Estado;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarAlerta($"Error al cargar reservas: {ex.Message}", "alert-danger");
+        }
+    }
+
+    private string ObtenerEstadoPago(string codigoReserva)
+    {
+        if (estadosPago.TryGetValue(codigoReserva, out var estado))
+        {
+            return estado;
+        }
+        return "Sin registrar";
+    }
+
+    private int ObtenerPrioridad(ReservaListadoDTO r)
+    {
+        var estadoPago = ObtenerEstadoPago(r.CodigoReserva);
+
+        if (string.Equals(estadoPago, "Pendiente de aclaración", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (string.Equals(estadoPago, "Pendiente de verificación", StringComparison.OrdinalIgnoreCase))
+        {
+            return 2;
+        }
+
+        if (string.Equals(r.Estado, "Reserva Confirmada", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(estadoPago, "Acreditado", StringComparison.OrdinalIgnoreCase))
+        {
+            return 3;
+        }
+
+        if (string.Equals(r.Estado, "Cancelada", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(estadoPago, "Cancelado", StringComparison.OrdinalIgnoreCase))
+        {
+            return 4;
+        }
+
+        return 5;
+    }
+
+    private async Task VerDetalle(int id)
+    {
+        cargandoDetalle = true;
+        accionPendiente = null;
+        try
+        {
+            var resp = await httpService.GetAsync<ReservaDetalleDTO>($"api/reserva/{id}");
+            if (resp.Error)
+            {
+                MostrarAlerta(resp.Mensaje ?? "No se pudo cargar el detalle de la reserva.", "alert-danger");
+            }
+            else
+            {
+                detalle = resp.Respuesta;
+                if (detalle?.Pago != null && !string.IsNullOrEmpty(detalle.CodigoReserva))
+                {
+                    estadosPago[detalle.CodigoReserva] = detalle.Pago.Estado;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarAlerta($"Error al cargar detalle: {ex.Message}", "alert-danger");
+        }
+        finally
+        {
+            cargandoDetalle = false;
+        }
+    }
+
+    private void CerrarDetalle()
+    {
+        detalle = null;
+        accionPendiente = null;
+    }
+
+    private bool PuedeConfirmar(ReservaDetalleDTO d)
+    {
+        return d.Estado != "Reserva Confirmada" &&
+               d.Estado != "Cancelada" &&
+               (d.Pago == null || d.Pago.Estado != "Cancelado");
+    }
+
+    private bool PuedeCancelar(ReservaDetalleDTO d)
+    {
+        return d.Estado == "Pendiente de verificación" ||
+               d.Estado == "Pendiente de aclaración";
+    }
+
+    private async Task EjecutarConfirmacion()
+    {
+        if (detalle == null) return;
+        procesandoAccion = true;
+
+        try
+        {
+            var respuesta = await httpClient.PutAsync($"api/reserva/{detalle.Id}/confirmar", null);
+            if (respuesta.IsSuccessStatusCode)
+            {
+                MostrarAlerta($"La reserva {detalle.CodigoReserva} fue confirmada con éxito. Pago acreditado y turnos confirmados.", "alert-success");
+                accionPendiente = null;
+                await CargarReservas();
+                await VerDetalle(detalle.Id);
+            }
+            else
+            {
+                var error = await respuesta.Content.ReadAsStringAsync();
+                MostrarAlerta($"No se pudo confirmar la reserva: {error}", "alert-danger");
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarAlerta($"Error al confirmar reserva: {ex.Message}", "alert-danger");
+        }
+        finally
+        {
+            procesandoAccion = false;
+        }
+    }
+
+    private async Task EjecutarCancelacion()
+    {
+        if (detalle == null) return;
+        procesandoAccion = true;
+
+        try
+        {
+            var respuesta = await httpClient.PutAsync($"api/reserva/{detalle.Id}/cancelar-administrativa", null);
+            if (respuesta.IsSuccessStatusCode)
+            {
+                MostrarAlerta($"La reserva {detalle.CodigoReserva} fue cancelada. Pago cancelado y turnos cancelados.", "alert-warning");
+                accionPendiente = null;
+                await CargarReservas();
+                await VerDetalle(detalle.Id);
+            }
+            else
+            {
+                var error = await respuesta.Content.ReadAsStringAsync();
+                MostrarAlerta($"No se pudo cancelar la reserva: {error}", "alert-danger");
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarAlerta($"Error al cancelar reserva: {ex.Message}", "alert-danger");
+        }
+        finally
+        {
+            procesandoAccion = false;
+        }
+    }
+
+    private List<ReservaListadoDTO> ObtenerReservasFiltradas()
+    {
+        if (reservas == null) return new List<ReservaListadoDTO>();
+
+        IEnumerable<ReservaListadoDTO> query = reservas;
+
+        switch (filtroEstado)
+        {
+            case "Pendientes":
+                query = query.Where(r =>
+                {
+                    var estadoPago = ObtenerEstadoPago(r.CodigoReserva);
+                    return string.Equals(estadoPago, "Pendiente de aclaración", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(estadoPago, "Pendiente de verificación", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(r.Estado, "Pendiente de verificación", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(r.Estado, "Pendiente de aclaración", StringComparison.OrdinalIgnoreCase);
+                });
+                break;
+
+            case "Confirmadas":
+                query = query.Where(r =>
+                {
+                    var estadoPago = ObtenerEstadoPago(r.CodigoReserva);
+                    return string.Equals(r.Estado, "Reserva Confirmada", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(estadoPago, "Acreditado", StringComparison.OrdinalIgnoreCase);
+                });
+                break;
+
+            case "Canceladas":
+                query = query.Where(r =>
+                {
+                    var estadoPago = ObtenerEstadoPago(r.CodigoReserva);
+                    return string.Equals(r.Estado, "Cancelada", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(estadoPago, "Cancelado", StringComparison.OrdinalIgnoreCase);
+                });
+                break;
+
+            case "Todas":
+            default:
+                break;
+        }
+
+        return query
+            .OrderBy(r => ObtenerPrioridad(r))
+            .ThenByDescending(r => r.FechaCreacion)
+            .ToList();
+    }
+
+    private void MostrarAlerta(string texto, string clase)
+    {
+        mensajeAlerta = texto;
+        claseAlerta = clase;
+    }
+
+    private static string ObtenerClaseBadgeReserva(string estado) => estado switch
+    {
+        "Reserva Confirmada" => "badge-stitch-success",
+        "Pendiente de verificación" => "badge-stitch-warning",
+        "Pendiente de aclaración" => "badge-stitch-warning",
+        "Cancelada" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
+
+    private static string ObtenerClaseBadgePago(string estado) => estado switch
+    {
+        "Acreditado" => "badge-stitch-success",
+        "Pendiente de verificación" => "badge-stitch-warning",
+        "Pendiente de aclaración" => "badge-stitch-warning",
+        "Cancelado" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
+
+    private static string ObtenerClaseBadgeTurno(string estado) => estado switch
+    {
+        "Turno confirmado" => "badge-stitch-success",
+        "Turno a confirmar" => "badge-stitch-warning",
+        "Cancelado" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
+}

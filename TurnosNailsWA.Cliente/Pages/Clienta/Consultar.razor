@@ -1,0 +1,712 @@
+@page "/consultar"
+@using TurnosNailsWA.Shared.DTO
+@using TurnosNailsWA.Servicio.ServicioHTTP
+@inject IHttpService http
+@inject HttpClient httpClient
+
+<PageTitle>Consultar Reserva • Eli Beauty Care</PageTitle>
+
+<div class="container py-4">
+    <!-- Top Title Area -->
+    <div class="text-center mb-4" style="max-width: 720px; margin: 0 auto;">
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white border shadow-sm mb-3">
+            <span class="material-symbols-outlined text-primary fs-6">spa</span>
+            <span class="text-uppercase fw-semibold text-primary small" style="letter-spacing: 0.1em; font-size: 0.75rem;">Portal de Seguimiento • Eli Beauty Care</span>
+        </div>
+        <h1 class="display-5 fw-bold text-dark mb-2" style="font-family: 'Playfair Display', serif;">
+            Consultar mi reserva
+        </h1>
+        <p class="text-muted small mb-0" style="line-height: 1.6;">
+            Ingresá el código único asignado al momento de solicitar tu turno para verificar su estado, los turnos asignados, el estado del pago, el detalle económico y gestionar cancelaciones si tu reserva se encuentra confirmada.
+        </p>
+    </div>
+
+    <!-- Prominent Search Card -->
+    <div class="card card-stitch p-4 mb-4 shadow-sm" style="max-width: 760px; margin: 0 auto;">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted">
+                        <span class="material-symbols-outlined fs-6">pin</span>
+                    </span>
+                    <input type="text"
+                           class="form-control text-uppercase font-monospace fw-bold"
+                           placeholder="Ej: TN-849201-7104"
+                           style="letter-spacing: 0.08em; font-size: 1.05rem;"
+                           @bind="codigoInput"
+                           @bind:event="oninput"
+                           @onkeydown="ManejarTecla" />
+                    @if (!string.IsNullOrEmpty(codigoInput))
+                    {
+                        <button class="btn btn-outline-secondary" type="button" @onclick="() => codigoInput = string.Empty" title="Limpiar">
+                            <span class="material-symbols-outlined fs-6">backspace</span>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <button type="button"
+                        class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2 shadow-sm"
+                        disabled="@(string.IsNullOrWhiteSpace(codigoInput) || cargando)"
+                        @onclick="BuscarReserva">
+                    @if (cargando)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        <span>Buscando...</span>
+                    }
+                    else
+                    {
+                        <span class="material-symbols-outlined fs-6">search</span>
+                        <span>Consultar</span>
+                    }
+                </button>
+            </div>
+        </div>
+        <div class="mt-2 d-flex justify-content-between align-items-center small text-muted">
+            <span>Formato esperado: <strong class="text-dark font-monospace">TN-XXXXXX-XXXX</strong></span>
+            <a href="https://wa.me/5493513407604" target="_blank" class="text-success text-decoration-none d-inline-flex align-items-center gap-1">
+                <i class="bi bi-whatsapp"></i> ¿Dudas con tu reserva? Consultá a Eli
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="max-width: 960px; margin: 0 auto 1.5rem auto;">
+            <div class="d-flex align-items-start gap-2">
+                <span class="material-symbols-outlined text-danger fs-5">warning</span>
+                <div>
+                    <strong>Atención:</strong> @mensajeError
+                </div>
+            </div>
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(mensajeExito))
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert" style="max-width: 960px; margin: 0 auto 1.5rem auto;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="material-symbols-outlined text-success fs-5">check_circle</span>
+                <div>@mensajeExito</div>
+            </div>
+            <button type="button" class="btn-close" @onclick="() => mensajeExito = null"></button>
+        </div>
+    }
+
+    <!-- Detalle de la Reserva Encontrada -->
+    @if (reserva != null)
+    {
+        <div class="card card-stitch shadow-sm p-4 mb-4" style="max-width: 960px; margin: 0 auto;">
+            <!-- Header Banner con Código y Badges de Estados Visibles -->
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 pb-3 mb-4 border-bottom">
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold small d-block mb-1" style="letter-spacing: 0.08em; font-size: 0.72rem;">Código de Reserva</span>
+                    <h2 class="h3 fw-bold text-primary font-monospace mb-0">@reserva.CodigoReserva</h2>
+                </div>
+
+                <!-- Badges de los 3 estados claramente visibles -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge @ObtenerClaseBadgeReserva(reserva.Estado) px-3 py-1.5 rounded-pill fs-6">
+                        Reserva: @reserva.Estado
+                    </span>
+
+                    @if (reserva.Pago != null)
+                    {
+                        <span class="badge @ObtenerClaseBadgePago(reserva.Pago.Estado) px-3 py-1.5 rounded-pill fs-6">
+                            Pago: @reserva.Pago.Estado
+                        </span>
+                    }
+
+                    @if (PuedeCancelarReservaCompleta())
+                    {
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 ms-lg-2"
+                                disabled="@procesandoCancelacion"
+                                @onclick="IniciarCancelacionReservaCompleta">
+                            <span class="material-symbols-outlined fs-6">cancel</span>
+                            <span>Cancelar reserva completa</span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Avisos contextuales según estado de la reserva y del pago -->
+            @if (reserva.Pago?.Estado == "Pendiente de aclaración")
+            {
+                <div class="alert alert-warning py-2.5 px-3 mb-4 d-flex align-items-center gap-3">
+                    <span class="material-symbols-outlined text-warning fs-3">warning</span>
+                    <div class="small">
+                        <strong>Atención con tu pago:</strong> El pago se encuentra <em>Pendiente de aclaración</em>. Por favor comunicate con Eli Beauty Care al salón o por WhatsApp indicando tu código <strong>@reserva.CodigoReserva</strong> para validar el comprobante de transferencia.
+                    </div>
+                </div>
+            }
+            else if (reserva.Estado == "Pendiente de verificación")
+            {
+                <div class="alert alert-info py-2.5 px-3 mb-4 d-flex align-items-center gap-3">
+                    <span class="material-symbols-outlined text-primary fs-3">info</span>
+                    <div class="small">
+                        Tu reserva está <strong>Pendiente de verificación</strong>. La administradora revisará el comprobante bancario para confirmar tus turnos. (Las cancelaciones por parte de la clienta están disponibles una vez confirmada la reserva).
+                    </div>
+                </div>
+            }
+            else if (reserva.Estado == "Reserva Confirmada")
+            {
+                <div class="alert alert-success py-2.5 px-3 mb-4 d-flex align-items-center gap-3">
+                    <span class="material-symbols-outlined text-success fs-3">verified</span>
+                    <div class="small">
+                        <strong>¡Tu reserva está confirmada!</strong> Tu transferencia fue acreditada exitosamente. Te esperamos en el salón en las fechas y horarios indicados.
+                    </div>
+                </div>
+            }
+            else if (reserva.Estado == "Cancelada")
+            {
+                <div class="alert alert-danger py-2.5 px-3 mb-4 d-flex align-items-center gap-3">
+                    <span class="material-symbols-outlined text-danger fs-3">cancel</span>
+                    <div class="small">
+                        Esta reserva ha sido cancelada. La seña acreditada se conserva en historial (no admite devolución).
+                    </div>
+                </div>
+            }
+
+            <!-- 1. Tarjetas Diferenciadas para Reserva, Pago y Resumen Económico -->
+            <div class="row g-3 mb-4">
+                <!-- Tarjeta 1: Información General de la Clienta y Reserva -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card p-3 rounded-3 h-100 border shadow-sm" style="background-color: var(--color-surface-container-low);">
+                        <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
+                            <span class="material-symbols-outlined text-primary fs-5">person</span>
+                            <span class="text-uppercase text-muted fw-bold small" style="font-size: 0.72rem;">Datos de la Clienta</span>
+                        </div>
+                        <h6 class="fw-bold mb-1 text-dark">@reserva.Cliente.Nombre @reserva.Cliente.Apellido</h6>
+                        <p class="small text-muted mb-1">
+                            <strong>Teléfono:</strong> @reserva.Cliente.Telefono
+                        </p>
+                        <p class="small text-muted mb-2">
+                            <strong>Fecha de solicitud:</strong> @reserva.FechaCreacion.ToString("dd/MM/yyyy HH:mm") hs
+                        </p>
+                        <div class="mt-auto pt-2 border-top">
+                            <span class="small text-muted d-block mb-1">Estado de la reserva:</span>
+                            <span class="badge @ObtenerClaseBadgeReserva(reserva.Estado)">
+                                @reserva.Estado
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 2: Información del Pago y Comprobante -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card p-3 rounded-3 h-100 border shadow-sm" style="background-color: var(--color-surface-container-low);">
+                        <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
+                            <span class="material-symbols-outlined text-primary fs-5">account_balance_wallet</span>
+                            <span class="text-uppercase text-muted fw-bold small" style="font-size: 0.72rem;">Información del Pago</span>
+                        </div>
+                        @if (reserva.Pago != null)
+                        {
+                            <div class="mb-2">
+                                <span class="small text-muted d-block mb-1">Estado del pago:</span>
+                                <span class="badge @ObtenerClaseBadgePago(reserva.Pago.Estado)">
+                                    @reserva.Pago.Estado
+                                </span>
+                            </div>
+                            <p class="small text-muted mb-1">
+                                <strong>Método:</strong> @reserva.Pago.MetodoPago
+                            </p>
+                            <p class="small text-muted mb-2">
+                                <strong>Seña transferida (30%):</strong> <span class="fw-bold text-primary">$ @reserva.Pago.Monto.ToString("N2")</span>
+                            </p>
+
+                            <!-- Visualización del comprobante adjuntado -->
+                            <div class="mt-auto pt-2 border-top">
+                                @if (!string.IsNullOrEmpty(reserva.Pago.Comprobante))
+                                {
+                                    <span class="small text-muted d-block mb-1">Comprobante adjuntado:</span>
+                                    <a href="api/pago/@reserva.Pago.Id/comprobante" target="_blank"
+                                       class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                                        <span class="material-symbols-outlined fs-6">receipt_long</span>
+                                        <span>Ver comprobante</span>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">Sin comprobante registrado</small>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary mb-2">Sin registrar</span>
+                            <p class="small text-muted mb-0">No se registra información de pago para esta reserva.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Tarjeta 3: Resumen Económico (Total, Seña 30%, Saldo 70%) -->
+                <div class="col-12 col-md-12 col-lg-4">
+                    <div class="card p-3 rounded-3 h-100 border shadow-sm" style="background-color: var(--color-surface-container-low);">
+                        <div class="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
+                            <span class="material-symbols-outlined text-primary fs-5">payments</span>
+                            <span class="text-uppercase text-muted fw-bold small" style="font-size: 0.72rem;">Resumen Económico</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Importe total:</span>
+                            <span class="fw-bold text-dark fs-6">$ @reserva.ImporteTotal.ToString("N2")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-primary fw-semibold">Seña del 30%:</span>
+                            <span class="fw-bold text-primary fs-6">$ @((reserva.Pago?.Monto ?? (reserva.ImporteTotal * 0.30m)).ToString("N2"))</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top mb-2">
+                            <span class="small text-dark fw-bold">Saldo del 70% en salón:</span>
+                            <span class="fw-bold text-success fs-5">
+                                $ @((reserva.Liquidacion?.SaldoPendiente ?? (reserva.ImporteTotal - (reserva.Pago?.Monto ?? (reserva.ImporteTotal * 0.30m)))).ToString("N2"))
+                            </span>
+                        </div>
+                        <div class="mt-auto">
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                * El saldo restante se cancela el día del turno en el salón.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen Económico y Liquidación de Cancelaciones (Si existen cancelaciones) -->
+            @if (reserva.Liquidacion != null && reserva.Liquidacion.TieneCancelaciones)
+            {
+                <div class="card border-primary mb-4 shadow-sm" style="border-radius: 14px;">
+                    <div class="card-header bg-primary text-white py-2 d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined fs-5">receipt_long</span>
+                        <h6 class="mb-0 fw-bold">Resumen Económico y Liquidación de Cancelaciones</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered bg-white align-middle mb-2">
+                                <tbody>
+                                    <tr class="table-light">
+                                        <td><strong>Total original de la reserva</strong></td>
+                                        <td class="text-end fw-bold">$ @reserva.Liquidacion.TotalOriginal.ToString("N2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Seña transferida (30%)</strong> <span class="text-muted small">(no reembolsable)</span></td>
+                                        <td class="text-end fw-bold text-primary">$ @reserva.Liquidacion.SeniaTransferida.ToString("N2")</td>
+                                    </tr>
+                                    <tr class="table-danger">
+                                        <td>
+                                            <strong>Servicios cancelados</strong>
+                                            <span class="badge bg-danger ms-1">@reserva.Liquidacion.CantidadTurnosCancelados turno(s)</span>
+                                        </td>
+                                        <td class="text-end fw-bold text-danger">$ @reserva.Liquidacion.TotalCancelados.ToString("N2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 text-muted">• Seña retenida correspondiente a cancelados (30%)</td>
+                                        <td class="text-end text-muted">$ @reserva.Liquidacion.SeniaRetenidaCancelados.ToString("N2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 text-success">• Restante descontado por servicios cancelados (70%)</td>
+                                        <td class="text-end text-success fw-bold">-$ @reserva.Liquidacion.RestanteDescontadoCancelados.ToString("N2")</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td>
+                                            <strong>Total de servicios que siguen confirmados</strong>
+                                            <span class="badge bg-success ms-1">@reserva.Liquidacion.CantidadTurnosActivos turno(s)</span>
+                                        </td>
+                                        <td class="text-end fw-bold text-success">$ @reserva.Liquidacion.TotalActivos.ToString("N2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 text-muted">• Parte de seña correspondiente a servicios activos (30%)</td>
+                                        <td class="text-end text-muted">$ @reserva.Liquidacion.SeniaActivos.ToString("N2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 text-dark">• Restante de servicios activos (70%)</td>
+                                        <td class="text-end text-dark fw-bold">$ @reserva.Liquidacion.RestanteActivos.ToString("N2")</td>
+                                    </tr>
+                                    <tr class="table-warning border-top border-2">
+                                        <td class="fs-6 fw-bold text-dark">
+                                            <span class="material-symbols-outlined fs-6 align-middle me-1">payments</span>
+                                            Saldo pendiente en salón:
+                                        </td>
+                                        <td class="text-end fs-5 fw-bold text-dark">
+                                            $ @reserva.Liquidacion.SaldoPendiente.ToString("N2")
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted d-block">
+                            <em>* La seña transferida no se devuelve y queda retenida en el salón por los turnos cancelados. El restante a abonar en el salón corresponde únicamente a los servicios que continúan confirmados.</em>
+                        </small>
+                    </div>
+                </div>
+            }
+
+            <!-- Diálogo de Confirmación previo a Cancelar -->
+            @if (tipoAccionCancelacion != null)
+            {
+                <div class="card border-warning mb-4 shadow-sm" style="border-radius: 14px;">
+                    <div class="card-header bg-warning text-dark fw-bold d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined fs-5">warning</span>
+                        <span>@(tipoAccionCancelacion == "turno" ? "Confirmar cancelación de turno individual" : "Confirmar cancelación de reserva completa")</span>
+                    </div>
+                    <div class="card-body">
+                        @if (tipoAccionCancelacion == "turno" && turnoACancelar != null)
+                        {
+                            <p class="mb-2">
+                                Estás a punto de cancelar el turno de:
+                                <strong class="text-primary d-block fs-6 my-1">@turnoACancelar.ServicioCompleto</strong>
+                                Fecha: <strong>@turnoACancelar.Fecha.ToString("dd/MM/yyyy")</strong> de <strong>@turnoACancelar.Hora.ToString(@"hh\:mm") a @turnoACancelar.HoraFin.ToString(@"hh\:mm") hs</strong> (@turnoACancelar.Duracion min).
+                            </p>
+                            <p class="text-muted small mb-3">
+                                Los demás turnos de tu reserva permanecerán confirmados. Recordá que la seña acreditada no se devuelve (se retiene el 30% del servicio cancelado) y se descontará el 70% restante del saldo a pagar en el salón.
+                            </p>
+                        }
+                        else if (tipoAccionCancelacion == "reservaCompleta")
+                        {
+                            <p class="mb-2">
+                                Estás a punto de cancelar tu <strong>reserva completa (@reserva.CodigoReserva)</strong>. Se cancelarán automáticamente todos los turnos activos asignados.
+                            </p>
+                            <p class="text-muted small mb-3">
+                                Esta acción no se puede deshacer. Recordá que el pago de la seña ya acreditado no se devuelve. El saldo pendiente en salón quedará en $ 0,00.
+                            </p>
+                        }
+
+                        <div class="d-flex gap-2">
+                            <button type="button"
+                                    class="btn btn-danger btn-sm"
+                                    disabled="@procesandoCancelacion"
+                                    @onclick="EjecutarCancelacion">
+                                @if (procesandoCancelacion)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                    <span>Cancelando...</span>
+                                }
+                                else
+                                {
+                                    <span>Sí, confirmar cancelación</span>
+                                }
+                            </button>
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    disabled="@procesandoCancelacion"
+                                    @onclick="CerrarConfirmacion">
+                                Volver atrás
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- 2. Tabla de Turnos / Servicios Incluidos (Categoría, Nombre, Duración, Fecha, Horario, Precio, Estado, Acciones) -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0" style="font-family: 'Playfair Display', serif;">Servicios y Turnos incluidos</h5>
+                <span class="text-muted small">Total: <strong>@(reserva.Turnos?.Count ?? 0)</strong> turno(s)</span>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-stitch mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 90px;">Categoría</th>
+                            <th>Servicio (Nombre)</th>
+                            <th class="text-center">Duración</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th class="text-end">Precio</th>
+                            <th class="text-center">Estado del turno</th>
+                            <th class="text-center" style="width: 170px;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (reserva.Turnos != null && reserva.Turnos.Count > 0)
+                        {
+                            @foreach (var turno in reserva.Turnos)
+                            {
+                                <tr class="@(turno.Estado == "Cancelado" ? "text-muted" : "")" style="@(turno.Estado == "Cancelado" ? "background-color: #faf8f8;" : "")">
+                                    <td class="text-center">
+                                        <span class="badge rounded-pill text-uppercase px-2 py-1" style="font-size: 0.7rem; background-color: @(turno.Categoria.Equals("Manos", StringComparison.OrdinalIgnoreCase) ? "var(--color-secondary-container)" : "#eae8e4"); color: var(--color-primary);">
+                                            @turno.Categoria
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-dark">
+                                        @turno.ServicioNombre
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-stitch-surface">@turno.Duracion min</span>
+                                    </td>
+                                    <td>@turno.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@turno.Hora.ToString(@"hh\:mm") a @turno.HoraFin.ToString(@"hh\:mm") hs</td>
+                                    <td class="text-end fw-bold text-dark">
+                                        $ @turno.Precio.ToString("N2")
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @ObtenerClaseBadgeTurno(turno.Estado)">
+                                            @turno.Estado
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (TurnoPuedeCancelar(turno))
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    disabled="@procesandoCancelacion"
+                                                    @onclick="() => IniciarCancelacionTurno(turno)">
+                                                Cancelar turno
+                                            </button>
+                                        }
+                                        else if (turno.Estado == "Turno confirmado" && (turno.Fecha.Date + turno.Hora) <= DateTime.Now)
+                                        {
+                                            <small class="text-muted fst-italic">En curso o concluido</small>
+                                        }
+                                        else if (turno.Estado == "Cancelado")
+                                        {
+                                            <small class="text-muted">Cancelado</small>
+                                        }
+                                        else if (reserva.Estado == "Pendiente de verificación")
+                                        {
+                                            <small class="text-muted fst-italic">Disponible tras confirmación</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">-</small>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-3">No se registran turnos para esta reserva.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Acciones y Contacto WhatsApp Comercial -->
+            <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <a href="reservar" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-6">add</span>
+                    <span>Hacer una nueva reserva</span>
+                </a>
+                <a href="@GenerarEnlaceWhatsAppConsulta(reserva)" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-whatsapp"></i>
+                    <span>Contactar a Eli por WhatsApp</span>
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Codigo { get; set; }
+
+    private const string NumeroComercialWhatsApp = "5493513407604";
+
+    private string codigoInput = "";
+    private bool cargando = false;
+    private string? mensajeError = null;
+    private string? mensajeExito = null;
+    private ReservaDetalleDTO? reserva = null;
+
+    private string? tipoAccionCancelacion = null;
+    private TurnoListadoDTO? turnoACancelar = null;
+    private bool procesandoCancelacion = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Codigo))
+        {
+            codigoInput = Codigo.Trim();
+            await BuscarReserva();
+        }
+    }
+
+    private async Task ManejarTecla(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(codigoInput) && !cargando)
+        {
+            await BuscarReserva();
+        }
+    }
+
+    private async Task BuscarReserva()
+    {
+        if (string.IsNullOrWhiteSpace(codigoInput))
+        {
+            return;
+        }
+
+        cargando = true;
+        mensajeError = null;
+        mensajeExito = null;
+        reserva = null;
+        CerrarConfirmacion();
+
+        try
+        {
+            string codigoNormalizado = codigoInput.Trim().ToUpperInvariant();
+            var resp = await http.GetAsync<ReservaDetalleDTO>($"api/reserva/codigo/{codigoNormalizado}");
+
+            if (!resp.Error && resp.Respuesta != null)
+            {
+                reserva = resp.Respuesta;
+            }
+            else
+            {
+                mensajeError = !string.IsNullOrEmpty(resp.Mensaje)
+                    ? resp.Mensaje
+                    : $"No existe una reserva registrada con el código: {codigoNormalizado}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Ocurrió un error al consultar la reserva: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private bool TurnoPuedeCancelar(TurnoListadoDTO t) =>
+        reserva?.Estado == "Reserva Confirmada" &&
+        t.Estado == "Turno confirmado" &&
+        (t.Fecha.Date + t.Hora) > DateTime.Now;
+
+    private bool PuedeCancelarReservaCompleta()
+    {
+        if (reserva?.Estado != "Reserva Confirmada" || reserva.Turnos == null)
+        {
+            return false;
+        }
+
+        var primerTurnoActivo = reserva.Turnos
+            .Where(t => t.Estado != "Cancelado")
+            .OrderBy(t => t.Fecha.Date + t.Hora)
+            .FirstOrDefault();
+
+        return primerTurnoActivo != null && (primerTurnoActivo.Fecha.Date + primerTurnoActivo.Hora) > DateTime.Now;
+    }
+
+    private void IniciarCancelacionTurno(TurnoListadoDTO turno)
+    {
+        tipoAccionCancelacion = "turno";
+        turnoACancelar = turno;
+        mensajeError = null;
+        mensajeExito = null;
+    }
+
+    private void IniciarCancelacionReservaCompleta()
+    {
+        tipoAccionCancelacion = "reservaCompleta";
+        turnoACancelar = null;
+        mensajeError = null;
+        mensajeExito = null;
+    }
+
+    private void CerrarConfirmacion()
+    {
+        tipoAccionCancelacion = null;
+        turnoACancelar = null;
+    }
+
+    private async Task EjecutarCancelacion()
+    {
+        if (reserva == null || tipoAccionCancelacion == null)
+        {
+            return;
+        }
+
+        procesandoCancelacion = true;
+        mensajeError = null;
+        mensajeExito = null;
+
+        try
+        {
+            string url = tipoAccionCancelacion == "turno"
+                ? $"api/turno/{turnoACancelar!.Id}/cancelar"
+                : $"api/reserva/{reserva.Id}/cancelar";
+
+            using var request = new HttpRequestMessage(HttpMethod.Put, url);
+            request.Headers.Add("X-Codigo-Reserva", reserva.CodigoReserva);
+
+            var respuesta = await httpClient.SendAsync(request);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensajeExito = tipoAccionCancelacion == "turno"
+                    ? $"El turno de {turnoACancelar!.ServicioCompleto} fue cancelado exitosamente."
+                    : "La reserva completa fue cancelada exitosamente.";
+
+                CerrarConfirmacion();
+                await RefrescarReserva();
+            }
+            else
+            {
+                var errorServidor = await HttpResp<bool>.LeerMensajeAsync(respuesta);
+                mensajeError = !string.IsNullOrEmpty(errorServidor)
+                    ? errorServidor
+                    : "No se pudo realizar la cancelación. Verificá los datos e intentá nuevamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Ocurrió un error al procesar la cancelación: " + ex.Message;
+        }
+        finally
+        {
+            procesandoCancelacion = false;
+        }
+    }
+
+    private async Task RefrescarReserva()
+    {
+        if (reserva == null) return;
+        var resp = await http.GetAsync<ReservaDetalleDTO>($"api/reserva/codigo/{reserva.CodigoReserva}");
+        if (!resp.Error && resp.Respuesta != null)
+        {
+            reserva = resp.Respuesta;
+        }
+    }
+
+    private string GenerarEnlaceWhatsAppConsulta(ReservaDetalleDTO r)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("¡Hola Eli Beauty Care! 👋");
+        sb.AppendLine($"Te consulto sobre mi reserva *{r.CodigoReserva}* a nombre de {r.Cliente.Nombre} {r.Cliente.Apellido}.");
+        sb.AppendLine($"📌 *Estado:* {r.Estado}");
+        sb.AppendLine($"💰 *Total:* $ {r.ImporteTotal:N2} | *Saldo restante:* $ {((r.Liquidacion?.SaldoPendiente ?? (r.ImporteTotal - (r.Pago?.Monto ?? (r.ImporteTotal * 0.30m)))).ToString("N2"))}");
+
+        string textoCodificado = Uri.EscapeDataString(sb.ToString());
+        string numeroDestino = TelefonoHelper.FormatoWhatsApp(NumeroComercialWhatsApp);
+
+        return $"https://wa.me/{numeroDestino}?text={textoCodificado}";
+    }
+
+    private static string ObtenerClaseBadgeReserva(string estado) => estado switch
+    {
+        "Reserva Confirmada" => "badge-stitch-success",
+        "Pendiente de verificación" => "badge-stitch-warning",
+        "Cancelada" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
+
+    private static string ObtenerClaseBadgePago(string estado) => estado switch
+    {
+        "Acreditado" => "badge-stitch-success",
+        "Pendiente de verificación" => "badge-stitch-warning",
+        "Pendiente de aclaración" => "badge-stitch-warning",
+        "Cancelado" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
+
+    private static string ObtenerClaseBadgeTurno(string estado) => estado switch
+    {
+        "Turno confirmado" => "badge-stitch-success",
+        "Turno a confirmar" => "badge-stitch-warning",
+        "Cancelado" => "badge-stitch-danger",
+        _ => "badge-stitch-surface"
+    };
+}

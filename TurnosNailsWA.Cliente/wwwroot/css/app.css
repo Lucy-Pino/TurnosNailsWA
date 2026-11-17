@@ -1,72 +1,718 @@
+:root {
+    --color-primary: #7e5356;
+    --color-primary-dark: #674144;
+    --color-primary-light: #9a6d70;
+    --color-primary-container: #c99598;
+    --color-on-primary-container: #532e31;
+    --color-primary-fixed-dim: #f0b9bc;
+    --color-surface: #fcf9f5;
+    --color-surface-container-low: #f6f3ef;
+    --color-surface-container: #f0ede9;
+    --color-surface-container-high: #eae8e4;
+    --color-surface-container-highest: #e5e2de;
+    --color-surface-container-lowest: #ffffff;
+    --color-on-surface: #1c1c1a;
+    --color-on-surface-variant: #514444;
+    --color-outline: #837374;
+    --color-outline-variant: #d5c2c2;
+    --color-secondary: #785461;
+    --color-secondary-container: #fdcedd;
+    --color-on-secondary-container: #795562;
+    --color-error: #ba1a1a;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #93000a;
+}
+
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
 }
 
-h1:focus {
-    outline: none;
+h1, h2, h3, h4, .font-serif, .font-playfair, .brand-title {
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    letter-spacing: -0.01em;
 }
 
-a, .btn-link {
-    color: #0071c1;
+.font-inter {
+    font-family: 'Inter', sans-serif;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+    vertical-align: middle;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+/* Links & Buttons */
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
-.content {
-    padding-top: 1.1rem;
+a:hover {
+    color: var(--color-primary-dark);
+    text-decoration: none;
 }
 
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
+.btn-primary, .btn-stitch-primary {
+    color: #ffffff !important;
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 0.6rem 1.4rem;
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.2);
+    transition: all 0.25s ease;
 }
 
-.invalid {
-    outline: 1px solid red;
+.btn-primary:hover, .btn-primary:focus, .btn-stitch-primary:hover {
+    background-color: var(--color-primary-dark) !important;
+    border-color: var(--color-primary-dark) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(126, 83, 86, 0.3);
 }
 
-.validation-message {
-    color: red;
+.btn-outline-primary, .btn-stitch-outline {
+    color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    background-color: transparent !important;
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 0.55rem 1.25rem;
+    transition: all 0.25s ease;
 }
 
-#blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
+.btn-outline-primary:hover, .btn-stitch-outline:hover {
+    color: #ffffff !important;
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+}
+
+.btn-stitch-accent {
+    color: var(--color-on-primary-container) !important;
+    background-color: var(--color-primary-container) !important;
+    border-color: var(--color-primary-container) !important;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.6rem 1.4rem;
+    transition: all 0.25s ease;
+}
+
+.btn-stitch-accent:hover {
+    background-color: var(--color-primary) !important;
+    color: #ffffff !important;
+    border-color: var(--color-primary) !important;
+}
+
+.btn-stitch-secondary {
+    color: var(--color-on-surface) !important;
+    background-color: var(--color-surface-container) !important;
+    border: 1px solid var(--color-outline-variant) !important;
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 0.55rem 1.25rem;
+    transition: all 0.25s ease;
+}
+
+.btn-stitch-secondary:hover {
+    background-color: var(--color-surface-container-high) !important;
+    color: var(--color-primary) !important;
+}
+
+.btn-success {
+    background-color: #2e7d32 !important;
+    border-color: #2e7d32 !important;
+    border-radius: 10px;
+}
+
+.btn-success:hover {
+    background-color: #1b5e20 !important;
+    border-color: #1b5e20 !important;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 1px solid var(--color-outline-variant);
+    background-color: #ffffff;
+    color: var(--color-on-surface);
+    padding: 0.65rem 0.95rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem rgba(126, 83, 86, 0.18);
+    background-color: #ffffff;
+}
+
+/* Card Stitch */
+.card-stitch, .card {
+    background-color: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-surface-container-high);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(126, 83, 86, 0.05);
+    transition: box-shadow 0.25s ease;
+}
+
+.card-stitch:hover {
+    box-shadow: 0 8px 30px rgba(126, 83, 86, 0.08);
+}
+
+.card-header {
+    background-color: var(--color-surface-container-low);
+    border-bottom: 1px solid var(--color-surface-container-high);
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    padding: 1rem 1.25rem;
+}
+
+/* Stitch Stepper */
+.stitch-stepper-container {
+    background: #ffffff;
+    border: 1px solid var(--color-surface-container-high);
+    border-radius: 20px;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(126, 83, 86, 0.04);
+}
+
+.stitch-stepper-list {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 0;
     width: 100%;
-    z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
-
-.blazor-error-boundary {
-    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
-    padding: 1rem 1rem 1rem 3.7rem;
-    color: white;
+.stitch-step-item {
+    display: flex;
+    align-items: center;
 }
 
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
-    }
+.step-circle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
 
+.step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.step-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+
+.stitch-step-item.active .step-circle {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(126, 83, 86, 0.35);
+    border: 2px solid var(--color-primary);
+}
+
+.stitch-step-item.active .step-title {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+.stitch-step-item.completed .step-circle {
+    background-color: var(--color-primary-container);
+    color: #ffffff;
+    border: 2px solid var(--color-primary-container);
+}
+
+.stitch-step-item.completed .step-title {
+    color: var(--color-on-surface-variant);
+    font-weight: 600;
+}
+
+.step-check-icon {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+.stitch-step-item.pending .step-circle {
+    background-color: var(--color-surface-container);
+    color: var(--color-outline);
+    border: 2px solid var(--color-surface-container-highest);
+}
+
+.stitch-step-item.pending .step-title {
+    color: var(--color-outline);
+}
+
+.stitch-step-line {
+    flex: 1;
+    height: 3px;
+    background-color: var(--color-surface-container-highest);
+    margin: 0 1rem;
+    border-radius: 9999px;
+    transition: background-color 0.3s ease;
+}
+
+.stitch-step-line.filled {
+    background-color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+    .stitch-stepper-container {
+        padding: 0.85rem 1rem;
+    }
+    .step-title {
+        display: none;
+    }
+    .stitch-step-line {
+        margin: 0 0.4rem;
+    }
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Badges */
+.badge-stitch-primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+}
+
+.badge-stitch-accent {
+    background-color: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+}
+
+.badge-stitch-surface {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface-variant);
+    font-weight: 500;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+}
+
+.badge-stitch-warning {
+    background-color: #fff4e5;
+    color: #b26a00;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #ffe2b8;
+}
+
+.badge-stitch-success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #c8e6c9;
+}
+
+.badge-stitch-danger {
+    background-color: #fde8e8;
+    color: #ba1a1a;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #f8b4b4;
+}
+
+/* Category Filter Tabs & Stitch Filter Group */
+.stitch-filter-group {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--color-surface-container);
+    border-radius: 9999px;
+    padding: 4px;
+    gap: 4px;
+    border: 1px solid var(--color-surface-container-highest);
+}
+
+.stitch-pill-btn {
+    border: none !important;
+    outline: none !important;
+    background: transparent;
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.stitch-pill-btn:hover {
+    color: var(--color-on-surface);
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.stitch-pill-btn.active {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.25);
+}
+
+.stitch-pill-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background-color: var(--color-surface-container-highest);
+    color: var(--color-on-surface-variant);
+    transition: all 0.2s ease;
+}
+
+.stitch-pill-btn.active .stitch-pill-badge {
+    background-color: var(--color-primary-container);
+    color: #ffffff;
+}
+
+.category-tab-btn {
+    border-radius: 25px;
+    padding: 0.5rem 1.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--color-outline-variant);
+    background-color: var(--color-surface-container-lowest);
+    color: var(--color-on-surface-variant);
+    transition: all 0.25s ease;
+}
+
+.category-tab-btn.active {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.25);
+}
+
+/* Service Cards Stitch */
+.service-card-stitch {
+    position: relative;
+    background: #ffffff;
+    border: 1.5px solid var(--color-surface-container-high);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 8px rgba(126, 83, 86, 0.04);
+}
+
+.service-card-stitch:hover {
+    border-color: var(--color-primary-container);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(126, 83, 86, 0.08);
+}
+
+.service-card-stitch.is-selected {
+    border-color: var(--color-primary);
+    background: #fdfaf8;
+    box-shadow: 0 6px 20px rgba(126, 83, 86, 0.12);
+}
+
+.service-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.category-manos {
+    background-color: var(--color-secondary-container);
+    color: var(--color-secondary);
+}
+
+.category-pies {
+    background-color: var(--color-surface-container-high);
+    color: var(--color-on-surface-variant);
+}
+
+.selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.selected-pill .check-icon {
+    font-size: 16px;
+    color: var(--color-primary);
+    font-variation-settings: 'FILL' 1;
+}
+
+.service-card-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-on-surface);
+    margin-bottom: 0.4rem;
+    line-height: 1.35;
+}
+
+.service-card-stitch.is-selected .service-card-title {
+    color: var(--color-primary);
+}
+
+.service-card-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--color-on-surface-variant);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.service-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-surface-container);
+}
+
+.service-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.duration-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--color-on-surface-variant);
+    background-color: var(--color-surface-container-low);
+    padding: 3px 9px;
+    border-radius: 9999px;
+}
+
+.clock-icon {
+    font-size: 15px;
+}
+
+.service-price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: -0.01em;
+}
+
+.btn-select-stitch {
+    width: 100%;
+    border: 1.5px solid var(--color-primary) !important;
+    background: transparent !important;
+    color: var(--color-primary) !important;
+    padding: 7px 14px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-select-stitch:hover {
+    background: var(--color-primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(126, 83, 86, 0.25);
+}
+
+.service-selected-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-surface-container);
+    padding: 4px 8px 4px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--color-outline-variant);
+}
+
+.selected-count-label {
+    font-size: 0.8rem;
+    color: var(--color-on-surface-variant);
+}
+
+.selected-count-label strong {
+    color: var(--color-primary);
+    font-size: 0.95rem;
+}
+
+.counter-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.counter-btn {
+    border: none !important;
+    outline: none !important;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.counter-minus {
+    background: #ffffff !important;
+    color: var(--color-error) !important;
+    border: 1px solid var(--color-error-container) !important;
+}
+
+.counter-minus:hover {
+    background: var(--color-error) !important;
+    color: #ffffff !important;
+}
+
+.counter-plus {
+    background: var(--color-primary) !important;
+    color: #ffffff !important;
+}
+
+.counter-plus:hover {
+    background: var(--color-primary-dark) !important;
+}
+
+.counter-btn .material-symbols-outlined {
+    font-size: 16px;
+}
+
+.counter-value {
+    min-width: 22px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--color-on-surface);
+}
+
+/* Slot selection pill */
+.slot-pill {
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--color-outline-variant);
+    background-color: #ffffff;
+    color: var(--color-on-surface);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.slot-pill:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-surface-container-low);
+    color: var(--color-primary);
+}
+
+.slot-pill.active {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(126, 83, 86, 0.3);
+}
+
+/* Table Stitch */
+.table-stitch {
+    width: 100%;
+    margin-bottom: 1rem;
+    background-color: #ffffff;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-surface-container-high);
+}
+
+.table-stitch thead th {
+    background-color: var(--color-surface-container-low);
+    color: var(--color-on-surface-variant);
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--color-surface-container-high);
+}
+
+.table-stitch tbody td {
+    padding: 0.95rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-surface-container-high);
+    font-size: 0.92rem;
+}
+
+.table-stitch tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-stitch tbody tr:hover {
+    background-color: var(--color-surface-container-low);
+}
+
+/* Blazor Loading Indicator */
 .loading-progress {
     position: absolute;
     display: block;
@@ -76,40 +722,51 @@ a, .btn-link {
     margin: 0 auto 0 auto;
 }
 
-    .loading-progress circle {
-        fill: none;
-        stroke: #e0e0e0;
-        stroke-width: 0.6rem;
-        transform-origin: 50% 50%;
-        transform: rotate(-90deg);
-    }
+.loading-progress circle {
+    fill: none;
+    stroke: var(--color-surface-container-high);
+    stroke-width: 0.6rem;
+    transform-origin: 50% 50%;
+    transform: rotate(-90deg);
+}
 
-        .loading-progress circle:last-child {
-            stroke: #1b6ec2;
-            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
-            transition: stroke-dasharray 0.05s ease-in-out;
-        }
+.loading-progress circle:last-child {
+    stroke: var(--color-primary);
+    stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+    transition: stroke-dasharray 0.05s ease-in-out;
+}
 
 .loading-progress-text {
     position: absolute;
     text-align: center;
     font-weight: bold;
+    color: var(--color-primary);
     inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
 }
 
-    .loading-progress-text:after {
-        content: var(--blazor-load-percentage-text, "Loading");
-    }
-
-code {
-    color: #c02d76;
+.loading-progress-text:after {
+    content: var(--blazor-load-percentage-text, "Cargando...");
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
+#blazor-error-ui {
+    color-scheme: light only;
+    background: #fff3cd;
+    border-top: 2px solid #ffeeba;
+    color: #856404;
+    bottom: 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.8rem 1.5rem;
+    position: fixed;
+    width: 100%;
+    z-index: 10000;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-    text-align: start;
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 1rem;
+    top: 0.75rem;
 }

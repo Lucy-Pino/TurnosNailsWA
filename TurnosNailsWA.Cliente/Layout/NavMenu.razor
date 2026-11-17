@@ -1,6 +1,19 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">TurnosNailsWA.Cliente</a>
+﻿@using TurnosNailsWA.Cliente.Servicios
+@inject HttpClient http
+@inject NavigationManager navHttp
+@inject CustomAuthStateProvider authStateProvider
+
+<div class="top-row ps-3 pe-3 navbar navbar-dark">
+    <div class="container-fluid px-0">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="">
+            <span class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle" style="width: 32px; height: 32px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">spa</span>
+            </span>
+            <div>
+                <div>Eli Beauty Care</div>
+                <span class="brand-subtitle">Atelier &amp; Care</span>
+            </div>
+        </a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -8,69 +21,74 @@
 </div>
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
+    <nav class="nav flex-column py-3 px-2">
+        <div class="section-label">Portal Público</div>
+
+        <div class="nav-item">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="nav-icon"><span class="material-symbols-outlined">home</span></span> Inicio
             </NavLink>
         </div>
 
-        <div class="px-3 pt-3 pb-1">
-            <small class="text-uppercase text-white-50">Atención a clientas</small>
-        </div>
-
-        <div class="nav-item px-3">
+        <div class="nav-item">
             <NavLink class="nav-link" href="reservar">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Reservar turno
+                <span class="nav-icon"><span class="material-symbols-outlined">calendar_add_on</span></span> Reservar turno
             </NavLink>
         </div>
-        <div class="nav-item px-3">
+
+        <div class="nav-item">
             <NavLink class="nav-link" href="consultar">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Consultar reserva
+                <span class="nav-icon"><span class="material-symbols-outlined">search</span></span> Consultar reserva
             </NavLink>
         </div>
 
-        <div class="px-3 pt-3 pb-1">
-            <small class="text-uppercase text-white-50">Administración</small>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="section-label mt-4">Gestión Atelier</div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="servicios">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Servicios
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="horarios">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Horarios
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="clientas">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Clientas
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="reservas">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Reservas
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="pagos">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Pagos pendientes
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="turnos">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Turnos
-            </NavLink>
-        </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="admin" Match="NavLinkMatch.All">
+                        <span class="nav-icon"><span class="material-symbols-outlined">dashboard</span></span> Panel General
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="reservas">
+                        <span class="nav-icon"><span class="material-symbols-outlined">book_online</span></span> Reservas
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="turnos">
+                        <span class="nav-icon"><span class="material-symbols-outlined">calendar_today</span></span> Agenda de Turnos
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="servicios">
+                        <span class="nav-icon"><span class="material-symbols-outlined">spa</span></span> Servicios
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
+                <div class="nav-item pt-3 px-2">
+                    <button class="btn btn-outline-light btn-sm w-100 d-flex align-items-center justify-content-center gap-2" @onclick="CerrarSesion">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="section-label mt-4">Acceso Privado</div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="admin/login">
+                        <span class="nav-icon"><span class="material-symbols-outlined">lock</span></span> Iniciar sesión
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <div class="nav-item mt-4 pt-3 border-top border-white-50">
             <NavLink class="nav-link" href="https://localhost:7248/swagger" target="_blank">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Swagger
+                <span class="nav-icon"><span class="material-symbols-outlined">api</span></span> API Swagger
             </NavLink>
         </div>
-
     </nav>
 </div>
 
@@ -82,5 +100,17 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private async Task CerrarSesion()
+    {
+        try
+        {
+            await http.PostAsync("api/auth/logout", null);
+        }
+        catch { }
+
+        authStateProvider.NotificarEstado();
+        navHttp.NavigateTo("/");
     }
 }

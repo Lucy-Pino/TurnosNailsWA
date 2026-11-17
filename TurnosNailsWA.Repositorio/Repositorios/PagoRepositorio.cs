@@ -89,26 +89,53 @@ namespace TurnosNailsWA.Repositorio.Repositorios
             }
 
             var limite = DateTime.Now.AddMinutes(-minutos);
+            int totalActualizados = 0;
 
-            var vencidos = await
-            context.Pagos
-                        .Where(p => p.Estado == "Pendiente de verificación"
-                                 && p.Reserva.Estado == "Pendiente de verificación"
-                                 && p.FechaComprobanteAdjuntado <= limite)
-                        .ToListAsync();
+            // 1. Regla 4: Nunca debe existir una reserva confirmada con pago pendiente de verificación o de aclaración.
+            // Si la reserva ya fue confirmada, el pago asociado debe asegurarse en 'Acreditado'.
+            var confirmadosDesfasados = await context.Pagos
+                .Where(p => p.Reserva.Estado == "Reserva Confirmada"
+                         && (p.Estado == "Pendiente de aclaración" || p.Estado == "Pendiente de verificación"))
+                .ToListAsync();
 
-            if (vencidos.Count == 0)
+            foreach (var pago in confirmadosDesfasados)
             {
-                return 0;
+                pago.Estado = "Acreditado";
+                totalActualizados++;
             }
+
+            // 2. Regla 3: Si la reserva fue cancelada, el pago pendiente asociado debe asegurarse en 'Cancelado'.
+            var canceladosDesfasados = await context.Pagos
+                .Where(p => p.Reserva.Estado == "Cancelada"
+                         && (p.Estado == "Pendiente de aclaración" || p.Estado == "Pendiente de verificación"))
+                .ToListAsync();
+
+            foreach (var pago in canceladosDesfasados)
+            {
+                pago.Estado = "Cancelado";
+                totalActualizados++;
+            }
+
+            // 3. Regla 1: Al cumplirse los 30 minutos, solamente el pago pasa a 'Pendiente de aclaración',
+            // siempre que la reserva siga en 'Pendiente de verificación'.
+            var vencidos = await context.Pagos
+                .Where(p => p.Estado == "Pendiente de verificación"
+                         && p.Reserva.Estado == "Pendiente de verificación"
+                         && p.FechaComprobanteAdjuntado <= limite)
+                .ToListAsync();
 
             foreach (var pago in vencidos)
             {
                 pago.Estado = "Pendiente de aclaración";
+                totalActualizados++;
             }
 
-            await context.SaveChangesAsync();
-            return vencidos.Count;
+            if (totalActualizados > 0)
+            {
+                await context.SaveChangesAsync();
+            }
+
+            return totalActualizados;
         }
 
         public async Task<Pago?> SelectByReserva(int reservaId)

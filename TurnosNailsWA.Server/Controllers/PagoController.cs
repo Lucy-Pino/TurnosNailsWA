@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TurnosNailsWA.Repositorio.Repositorios;
 using TurnosNailsWA.Shared.DTO;
 
 namespace TurnosNailsWA.Server.Controllers
 {
+    [Authorize]
     [ApiController] // Indica que esta clase es un controlador de API
     [Route("api/pago")] // Define la ruta base para las acciones del controlador
     public class PagoController : ControllerBase
@@ -35,10 +37,6 @@ namespace TurnosNailsWA.Server.Controllers
             var paraAclarar = await pagoRepositorio.ListaPendientesAclaracion();
             var paraVerificar = await pagoRepositorio.ListaPendientesVerificacion();
             var lista = paraAclarar.Concat(paraVerificar).ToList();
-            if (lista.Count == 0)
-            {
-                return NotFound("Lista sin registros.");
-            }
             return Ok(lista);
         }
 
